@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, ChevronLeft, ChevronRight, User, Settings, LogOut, Music2 } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, User, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
 export default function Navbar() {
@@ -30,52 +30,44 @@ export default function Navbar() {
   const initial = user?.email?.[0]?.toUpperCase() ?? 'U'
 
   return (
-    <header
-      className="flex items-center gap-4 px-5 py-3 shrink-0"
-      style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)', minHeight: 60 }}
-    >
-      {/* History nav */}
-      <div className="flex gap-1.5 shrink-0">
-        <button onClick={() => router.back()}
-          className="btn-icon w-8 h-8 rounded-full"
-          style={{ background: 'var(--bg-elevated)' }}>
-          <ChevronLeft size={16} />
-        </button>
-        <button onClick={() => router.forward()}
-          className="btn-icon w-8 h-8 rounded-full"
-          style={{ background: 'var(--bg-elevated)' }}>
-          <ChevronRight size={16} />
-        </button>
+    <header style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '0 16px', height: 56, flexShrink: 0,
+      background: 'var(--bg-surface)',
+      borderBottom: '1px solid var(--border)',
+    }}>
+      {/* History */}
+      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+        {[ChevronLeft, ChevronRight].map((Icon, i) => (
+          <button key={i} onClick={() => i === 0 ? router.back() : router.forward()}
+            className="btn-icon"
+            style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--bg-elevated)' }}>
+            <Icon size={15} />
+          </button>
+        ))}
       </div>
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex-1 max-w-lg">
-        <div className="relative">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ color: 'var(--text-muted)' }} />
+      <form onSubmit={handleSearch} style={{ flex: 1, maxWidth: 420 }}>
+        <div style={{ position: 'relative' }}>
+          <Search size={13} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
           <input
-            type="text"
-            placeholder="Search songs…"
-            value={query}
+            type="text" placeholder="Search songs…" value={query}
             onChange={e => setQuery(e.target.value)}
-            className="input-dark w-full pl-9 pr-4 py-2 rounded-full text-sm"
+            className="input-dark"
+            style={{ width: '100%', paddingLeft: 34, paddingRight: 14, paddingTop: 8, paddingBottom: 8, borderRadius: 20, fontSize: 13 }}
           />
         </div>
       </form>
 
-      {/* Profile dropdown */}
-      <div className="relative ml-auto shrink-0" ref={dropRef}>
-        <button
-          onClick={() => setShowProfile(v => !v)}
-          className="flex items-center gap-2 px-2 py-1.5 rounded-full transition-all hover:bg-white/5"
-        >
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-lg"
-            style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'white' }}
-          >
+      {/* Profile */}
+      <div ref={dropRef} style={{ marginLeft: 'auto', position: 'relative', flexShrink: 0 }}>
+        <button onClick={() => setShowProfile(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px 5px 5px', borderRadius: 20, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', transition: 'background 0.15s' }}>
+          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'white', flexShrink: 0 }}>
             {initial}
           </div>
-          <span className="text-sm font-medium hidden sm:block" style={{ color: 'var(--text-secondary)' }}>
+          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {user?.email?.split('@')[0]}
           </span>
         </button>
@@ -86,38 +78,34 @@ export default function Navbar() {
               initial={{ opacity: 0, scale: 0.95, y: -4 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -4 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-0 top-full mt-2 rounded-xl shadow-2xl overflow-hidden z-50"
-              style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-hover)', minWidth: 200 }}
-            >
-              {/* User info */}
-              <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold"
-                    style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'white' }}>
-                    {initial}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate">{user?.email?.split('@')[0]}</p>
-                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{user?.email}</p>
-                  </div>
-                </div>
+              transition={{ duration: 0.14 }}
+              style={{
+                position: 'absolute', right: 0, top: 'calc(100% + 8px)',
+                background: 'var(--bg-overlay)', border: '1px solid var(--border-hover)',
+                borderRadius: 12, minWidth: 200, padding: 6,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 50,
+              }}>
+              <div style={{ padding: '10px 12px 10px', borderBottom: '1px solid var(--border)', marginBottom: 6 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.email?.split('@')[0]}
+                </p>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.email}
+                </p>
               </div>
-
-              {/* Menu items */}
-              <div className="p-1.5">
-                <Link href="/profile" onClick={() => setShowProfile(false)}
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-white/5"
-                  style={{ color: 'var(--text-secondary)' }}>
-                  <User size={15} /> Profile
-                </Link>
-                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
-                <button onClick={() => { signOut(); setShowProfile(false) }}
-                  className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-red-500/10 text-left"
-                  style={{ color: 'var(--danger)' }}>
-                  <LogOut size={15} /> Sign Out
-                </button>
-              </div>
+              <Link href="/profile" onClick={() => setShowProfile(false)}
+                style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', borderRadius: 8, fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'none', transition: 'background 0.12s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <User size={14} /> Profile
+              </Link>
+              <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+              <button onClick={() => { signOut(); setShowProfile(false) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13, color: 'var(--danger)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s', fontFamily: 'DM Sans,sans-serif' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,63,94,0.08)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <LogOut size={14} /> Sign Out
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

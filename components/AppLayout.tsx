@@ -19,34 +19,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [user, loading, router])
 
   if (loading) return (
-    <div className="flex items-center justify-center h-screen" style={{ background: 'var(--bg-base)' }}>
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative w-14 h-14">
-          <div className="absolute inset-0 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
-          <div className="absolute inset-2 rounded-full" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', opacity: 0.2 }} />
-        </div>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading Wavify…</p>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-base)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--accent)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading…</p>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 
   if (!user) return null
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-base)' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-base)' }}>
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
         <Navbar />
-        <main className="flex-1 overflow-y-auto">
+        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
           <AnimatePresence mode="wait">
             <motion.div
-              key="page"
-              initial={{ opacity: 0, y: 8 }}
+              key="page-content"
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.22 }}
-              className="h-full"
+              transition={{ duration: 0.2 }}
             >
               {children}
             </motion.div>
@@ -57,8 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <Toaster
         position="bottom-right"
-        gutter={8}
-        containerStyle={{ bottom: 100 }}
+        containerStyle={{ bottom: 96 }}
         toastOptions={{
           duration: 2500,
           style: {
@@ -66,9 +61,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             color: 'var(--text-primary)',
             border: '1px solid var(--border-hover)',
             fontFamily: "'DM Sans', sans-serif",
-            fontSize: '0.875rem',
-            borderRadius: '12px',
-            padding: '10px 16px',
+            fontSize: '0.85rem',
+            borderRadius: 10,
+            padding: '10px 14px',
           },
         }}
       />

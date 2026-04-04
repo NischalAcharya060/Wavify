@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
@@ -15,36 +15,15 @@ type SortKey = 'created_at' | 'title'
 type SortDir = 'asc' | 'desc'
 type ViewMode = 'list' | 'grid'
 
-function SkeletonRow() {
+function SkelRow() {
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5">
-      <div className="skeleton w-6 h-4 rounded" />
-      <div className="skeleton w-10 h-10 rounded-lg shrink-0" />
-      <div className="flex-1 space-y-1.5">
-        <div className="skeleton h-3.5 rounded w-2/3" />
-        <div className="skeleton h-3 rounded w-1/3" />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px' }}>
+      <div className="skeleton" style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0 }} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div className="skeleton" style={{ height: 13, width: '60%', borderRadius: 4 }} />
+        <div className="skeleton" style={{ height: 11, width: '35%', borderRadius: 4 }} />
       </div>
     </div>
-  )
-}
-
-function StatCard({ icon: Icon, label, value, color, delay }: any) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.3 }}
-      className="flex items-center gap-3 p-4 rounded-xl"
-      style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-    >
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: `${color}18` }}>
-        <Icon size={18} style={{ color }} />
-      </div>
-      <div>
-        <p className="text-xl font-bold">{value}</p>
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</p>
-      </div>
-    </motion.div>
   )
 }
 
@@ -78,39 +57,26 @@ export default function HomePage() {
   }
 
   const fetchSongs = async () => {
-    const { data } = await supabase.from('songs').select('*')
-      .eq('user_id', user!.id)
-      .order(sortKey, { ascending: sortDir === 'asc' })
+    const { data } = await supabase.from('songs').select('*').eq('user_id', user!.id).order('created_at', { ascending: false })
     setSongs(data || [])
   }
-
   const fetchRecent = async () => {
-    const { data } = await supabase.from('recently_played')
-      .select('*, songs(*)').eq('user_id', user!.id)
-      .order('played_at', { ascending: false }).limit(8)
-    const seen = new Set<string>()
-    const unique: Song[] = []
-    ;(data || []).forEach((r: any) => {
-      if (r.songs && !seen.has(r.songs.id)) { seen.add(r.songs.id); unique.push(r.songs) }
-    })
+    const { data } = await supabase.from('recently_played').select('*, songs(*)').eq('user_id', user!.id).order('played_at', { ascending: false }).limit(8)
+    const seen = new Set<string>(); const unique: Song[] = []
+    ;(data || []).forEach((r: any) => { if (r.songs && !seen.has(r.songs.id)) { seen.add(r.songs.id); unique.push(r.songs) } })
     setRecentSongs(unique)
   }
-
   const fetchPlaylists = async () => {
-    const { data } = await supabase.from('playlists').select('*')
-      .eq('user_id', user!.id).order('created_at', { ascending: false }).limit(6)
+    const { data } = await supabase.from('playlists').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }).limit(8)
     setPlaylists(data || [])
   }
-
   const fetchLiked = async () => {
     const { data } = await supabase.from('liked_songs').select('song_id').eq('user_id', user!.id)
     setLikedIds(new Set((data || []).map((l: any) => l.song_id)))
   }
 
   const sortedSongs = [...songs].sort((a, b) => {
-    const v = sortKey === 'title'
-      ? a.title.localeCompare(b.title)
-      : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    const v = sortKey === 'title' ? a.title.localeCompare(b.title) : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     return sortDir === 'asc' ? v : -v
   })
 
@@ -119,42 +85,58 @@ export default function HomePage() {
     fetchAll()
   }
 
+  const statItems = [
+    { icon: Music2,  label: 'Songs',    value: songs.length,        color: '#7c6af7' },
+    { icon: Disc3,   label: 'Playlists', value: playlists.length,   color: '#22c55e' },
+    { icon: Heart,   label: 'Liked',    value: likedIds.size,       color: '#f43f5e' },
+    { icon: Clock,   label: 'Recent',   value: recentSongs.length,  color: '#f59e0b' },
+  ]
+
   return (
-    <div className="p-6 pb-4">
+    <div style={{ padding: '24px 24px', maxWidth: '100%' }}>
+
       {/* Header */}
-      <motion.div initial={{ opacity:0, y:-8 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.3 }}
-        className="flex items-center justify-between mb-6">
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 className="text-3xl font-black">{greeting()}</h1>
-          <p className="mt-0.5 text-sm" style={{ color: 'var(--text-muted)' }}>
-            {user?.email?.split('@')[0]} · {songs.length} songs in library
+          <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'Syne,sans-serif', lineHeight: 1.2 }}>{greeting()}</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>
+            {user?.email?.split('@')[0]} · {songs.length} song{songs.length !== 1 ? 's' : ''} in library
           </p>
         </div>
-        <motion.button whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
+        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
           onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm">
-          <Plus size={15} /> Add Song
+          className="btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 10, fontSize: 13, flexShrink: 0 }}>
+          <Plus size={14} /> Add Song
         </motion.button>
-      </motion.div>
+      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-        <StatCard icon={Music2}  label="Songs"    value={songs.length}        color="#7c6af7" delay={0.05} />
-        <StatCard icon={Disc3}   label="Playlists" value={playlists.length}   color="#22c55e" delay={0.1}  />
-        <StatCard icon={Heart}   label="Liked"     value={likedIds.size}      color="#f43f5e" delay={0.15} />
-        <StatCard icon={Clock}   label="Recent"    value={recentSongs.length} color="#f59e0b" delay={0.2}  />
+      {/* Stats - compact row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 24 }}>
+        {statItems.map(({ icon: Icon, label, value, color }, i) => (
+          <motion.div key={label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <div style={{ width: 34, height: 34, borderRadius: 9, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Icon size={16} style={{ color }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 18, fontWeight: 800, fontFamily: 'Syne,sans-serif', lineHeight: 1 }}>{value}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{label}</p>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
       {/* Playlists */}
       {playlists.length > 0 && (
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold">Your Playlists</h2>
-            <a href="/library" className="text-sm font-medium" style={{ color: 'var(--accent)' }}>See all →</a>
+        <section style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, fontFamily: 'Syne,sans-serif' }}>Your Playlists</h2>
+            <a href="/library" style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>See all →</a>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12 }}>
             {playlists.map((pl, i) => (
-              <motion.div key={pl.id} initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} transition={{ delay: i*0.06 }}>
+              <motion.div key={pl.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
                 <PlaylistCard playlist={pl} />
               </motion.div>
             ))}
@@ -162,51 +144,47 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Recently played */}
+      {/* Recently Played */}
       {recentSongs.length > 0 && (
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold">Recently Played</h2>
-            {recentSongs.length > 0 && (
-              <button onClick={() => playSong(recentSongs[0], recentSongs)}
-                className="btn-ghost flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs">
-                <Play size={12} fill="currentColor" /> Play all
-              </button>
-            )}
+        <section style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, fontFamily: 'Syne,sans-serif' }}>Recently Played</h2>
+            <button onClick={() => playSong(recentSongs[0], recentSongs)}
+              className="btn-ghost"
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 8, fontSize: 12 }}>
+              <Play size={11} fill="currentColor" /> Play all
+            </button>
           </div>
-          <div className="space-y-0.5">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {recentSongs.slice(0, 5).map((song, i) => (
-              <SongCard key={song.id} song={song} queue={recentSongs}
-                isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked}
-                playlists={playlists} index={i} view="list" />
+              <SongCard key={song.id} song={song} queue={recentSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} playlists={playlists} index={i} />
             ))}
           </div>
         </section>
       )}
 
-      {/* Songs library */}
+      {/* All Songs */}
       <section>
-        <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-          <h2 className="text-lg font-bold">All Songs</h2>
-          <div className="flex items-center gap-2">
-            {/* Sort */}
-            <div className="flex items-center gap-1 rounded-lg overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-              {(['created_at','title'] as SortKey[]).map(k => (
-                <button key={k} onClick={() => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else setSortKey(k) }}
-                  className="px-3 py-1.5 text-xs font-medium transition-colors"
-                  style={{ color: sortKey === k ? 'var(--accent)' : 'var(--text-muted)', background: sortKey === k ? 'rgba(124,106,247,0.12)' : 'transparent' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, fontFamily: 'Syne,sans-serif' }}>All Songs</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Sort pills */}
+            <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+              {(['created_at', 'title'] as SortKey[]).map(k => (
+                <button key={k}
+                  onClick={() => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('asc') } }}
+                  style={{ padding: '5px 11px', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, background: sortKey === k ? 'rgba(124,106,247,0.15)' : 'transparent', color: sortKey === k ? 'var(--accent)' : 'var(--text-muted)', border: 'none', cursor: 'pointer', fontFamily: 'DM Sans,sans-serif', transition: 'all 0.12s' }}>
                   {k === 'created_at' ? 'Date' : 'A–Z'}
-                  {sortKey === k && (sortDir === 'asc' ? <SortAsc size={10} className="inline ml-1" /> : <SortDesc size={10} className="inline ml-1" />)}
+                  {sortKey === k && (sortDir === 'asc' ? <SortAsc size={11} /> : <SortDesc size={11} />)}
                 </button>
               ))}
             </div>
             {/* View toggle */}
-            <div className="flex items-center rounded-lg overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
               {([['list', List], ['grid', LayoutGrid]] as const).map(([mode, Icon]) => (
                 <button key={mode} onClick={() => setViewMode(mode)}
-                  className="p-2 transition-colors"
-                  style={{ color: viewMode === mode ? 'var(--accent)' : 'var(--text-muted)', background: viewMode === mode ? 'rgba(124,106,247,0.12)' : 'transparent' }}>
-                  <Icon size={15} />
+                  style={{ padding: '5px 9px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: viewMode === mode ? 'rgba(124,106,247,0.15)' : 'transparent', color: viewMode === mode ? 'var(--accent)' : 'var(--text-muted)', border: 'none', cursor: 'pointer', transition: 'all 0.12s' }}>
+                  <Icon size={14} />
                 </button>
               ))}
             </div>
@@ -214,48 +192,35 @@ export default function HomePage() {
         </div>
 
         {loading ? (
-          <div className="space-y-1">
-            {[...Array(6)].map((_, i) => <SkeletonRow key={i} />)}
-          </div>
+          <div>{[...Array(5)].map((_, i) => <SkelRow key={i} />)}</div>
         ) : sortedSongs.length === 0 ? (
-          <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
-            className="flex flex-col items-center justify-center py-16 rounded-2xl"
-            style={{ border: '2px dashed var(--border)' }}>
-            <Music2 size={40} style={{ color: 'var(--text-muted)' }} className="mb-3" />
-            <p className="font-semibold mb-1">No songs yet</p>
-            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Add your first YouTube song to get started</p>
-            <button onClick={() => setShowAddModal(true)}
-              className="btn-primary px-5 py-2.5 rounded-xl text-sm flex items-center gap-2">
-              <Plus size={15} /> Add Song
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 0', border: '2px dashed var(--border)', borderRadius: 16 }}>
+            <Music2 size={36} style={{ color: 'var(--text-muted)', marginBottom: 12, opacity: 0.5 }} />
+            <p style={{ fontWeight: 600, marginBottom: 4 }}>No songs yet</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>Add a YouTube song to get started</p>
+            <button onClick={() => setShowAddModal(true)} className="btn-primary" style={{ padding: '9px 20px', borderRadius: 10, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Plus size={14} /> Add Song
             </button>
-          </motion.div>
+          </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
             {sortedSongs.map((song, i) => (
-              <motion.div key={song.id} initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} transition={{ delay: i * 0.03 }}>
-                <SongCard song={song} queue={sortedSongs}
-                  isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked}
-                  showDelete onDelete={() => deleteSong(song.id)}
-                  playlists={playlists} index={i} view="grid" />
+              <motion.div key={song.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.02 }}>
+                <SongCard song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} view="grid" />
               </motion.div>
             ))}
           </div>
         ) : (
-          <div className="space-y-0.5">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {sortedSongs.map((song, i) => (
-              <SongCard key={song.id} song={song} queue={sortedSongs}
-                isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked}
-                showDelete onDelete={() => deleteSong(song.id)}
-                playlists={playlists} index={i} view="list" />
+              <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} />
             ))}
           </div>
         )}
       </section>
 
       <AnimatePresence>
-        {showAddModal && (
-          <AddSongModal onClose={() => setShowAddModal(false)} onAdded={fetchAll} />
-        )}
+        {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} onAdded={fetchAll} />}
       </AnimatePresence>
     </div>
   )
