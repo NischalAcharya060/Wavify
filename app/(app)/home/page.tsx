@@ -9,7 +9,7 @@ import SongCard from '@/components/SongCard'
 import PlaylistCard from '@/components/PlaylistCard'
 import AddSongModal from '@/components/AddSongModal'
 import { usePlayer } from '@/lib/PlayerContext'
-import { Plus, Music2, Disc3, Clock, Heart, Play, LayoutGrid, List, SortAsc, SortDesc } from 'lucide-react'
+import { Plus, Music2, Disc3, Clock, Heart, Play, LayoutGrid, List, SortAsc, SortDesc, Sparkles } from 'lucide-react'
 
 type SortKey = 'created_at' | 'title'
 type SortDir = 'asc' | 'desc'
@@ -17,13 +17,13 @@ type ViewMode = 'list' | 'grid'
 
 function SkelRow() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px' }}>
-      <div className="skeleton" style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0 }} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div className="skeleton" style={{ height: 13, width: '60%', borderRadius: 4 }} />
-        <div className="skeleton" style={{ height: 11, width: '35%', borderRadius: 4 }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, marginBottom: 8 }}>
+        <div className="skeleton" style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.05)', flexShrink: 0 }} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="skeleton" style={{ height: 12, width: '40%', borderRadius: 4, background: 'rgba(255,255,255,0.05)' }} />
+          <div className="skeleton" style={{ height: 10, width: '20%', borderRadius: 4, background: 'rgba(255,255,255,0.03)' }} />
+        </div>
       </div>
-    </div>
   )
 }
 
@@ -86,142 +86,206 @@ export default function HomePage() {
   }
 
   const statItems = [
-    { icon: Music2,  label: 'Songs',    value: songs.length,        color: '#7c6af7' },
-    { icon: Disc3,   label: 'Playlists', value: playlists.length,   color: '#22c55e' },
-    { icon: Heart,   label: 'Liked',    value: likedIds.size,       color: '#f43f5e' },
-    { icon: Clock,   label: 'Recent',   value: recentSongs.length,  color: '#f59e0b' },
+    { icon: Music2,  label: 'Tracks',    value: songs.length,        color: '#a78bfa' },
+    { icon: Disc3,   label: 'Playlists', value: playlists.length,   color: '#34d399' },
+    { icon: Heart,   label: 'Favorites', value: likedIds.size,       color: '#fb7185' },
+    { icon: Clock,   label: 'Recents',   value: recentSongs.length,  color: '#fbbf24' },
   ]
 
   return (
-    <div style={{ padding: '24px 24px', maxWidth: '100%' }}>
+      <div style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto', fontFamily: 'Geist, sans-serif' }}>
+        <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+        
+        .stat-card {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          backdrop-filter: blur(10px);
+          padding: 16px;
+          border-radius: 18px;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          transition: all 0.2s ease;
+        }
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'Syne,sans-serif', lineHeight: 1.2 }}>{greeting()}</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>
-            {user?.email?.split('@')[0]} · {songs.length} song{songs.length !== 1 ? 's' : ''} in library
-          </p>
-        </div>
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 10, fontSize: 13, flexShrink: 0 }}>
-          <Plus size={14} /> Add Song
-        </motion.button>
-      </div>
+        .stat-card:hover {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.12);
+          transform: translateY(-2px);
+        }
 
-      {/* Stats - compact row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 24 }}>
-        {statItems.map(({ icon: Icon, label, value, color }, i) => (
-          <motion.div key={label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-            <div style={{ width: 34, height: 34, borderRadius: 9, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Icon size={16} style={{ color }} />
+        .section-title {
+          font-family: 'Instrument Serif', serif;
+          font-style: italic;
+          font-size: 28px;
+          font-weight: 400;
+          color: #f5f0ff;
+        }
+
+        .control-pill {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 10px;
+          display: flex;
+          overflow: hidden;
+        }
+
+        .control-btn {
+          padding: 6px 12px;
+          font-size: 12px;
+          font-weight: 500;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          color: rgba(255,255,255,0.4);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+      `}</style>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, gap: 16 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#a78bfa', marginBottom: 8 }}>
+              <Sparkles size={14} />
+              <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Welcome back</span>
             </div>
-            <div>
-              <p style={{ fontSize: 18, fontWeight: 800, fontFamily: 'Syne,sans-serif', lineHeight: 1 }}>{value}</p>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{label}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Playlists */}
-      {playlists.length > 0 && (
-        <section style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, fontFamily: 'Syne,sans-serif' }}>Your Playlists</h2>
-            <a href="/library" style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>See all →</a>
+            <h1 style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 48, fontWeight: 400, color: '#fff', lineHeight: 1 }}>
+              {greeting()}, {user?.email?.split('@')[0]}
+            </h1>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12 }}>
-            {playlists.map((pl, i) => (
-              <motion.div key={pl.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
-                <PlaylistCard playlist={pl} />
-              </motion.div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Recently Played */}
-      {recentSongs.length > 0 && (
-        <section style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, fontFamily: 'Syne,sans-serif' }}>Recently Played</h2>
-            <button onClick={() => playSong(recentSongs[0], recentSongs)}
-              className="btn-ghost"
-              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 8, fontSize: 12 }}>
-              <Play size={11} fill="currentColor" /> Play all
-            </button>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {recentSongs.slice(0, 5).map((song, i) => (
-              <SongCard key={song.id} song={song} queue={recentSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} playlists={playlists} index={i} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* All Songs */}
-      <section>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, fontFamily: 'Syne,sans-serif' }}>All Songs</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Sort pills */}
-            <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
-              {(['created_at', 'title'] as SortKey[]).map(k => (
-                <button key={k}
-                  onClick={() => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('asc') } }}
-                  style={{ padding: '5px 11px', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, background: sortKey === k ? 'rgba(124,106,247,0.15)' : 'transparent', color: sortKey === k ? 'var(--accent)' : 'var(--text-muted)', border: 'none', cursor: 'pointer', fontFamily: 'DM Sans,sans-serif', transition: 'all 0.12s' }}>
-                  {k === 'created_at' ? 'Date' : 'A–Z'}
-                  {sortKey === k && (sortDir === 'asc' ? <SortAsc size={11} /> : <SortDesc size={11} />)}
-                </button>
-              ))}
-            </div>
-            {/* View toggle */}
-            <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
-              {([['list', List], ['grid', LayoutGrid]] as const).map(([mode, Icon]) => (
-                <button key={mode} onClick={() => setViewMode(mode)}
-                  style={{ padding: '5px 9px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: viewMode === mode ? 'rgba(124,106,247,0.15)' : 'transparent', color: viewMode === mode ? 'var(--accent)' : 'var(--text-muted)', border: 'none', cursor: 'pointer', transition: 'all 0.12s' }}>
-                  <Icon size={14} />
-                </button>
-              ))}
-            </div>
-          </div>
+          <motion.button
+              whileHover={{ scale: 1.02, translateY: -1 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowAddModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+                color: 'white', border: 'none', padding: '12px 20px',
+                borderRadius: 14, fontSize: 14, fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 8,
+                boxShadow: '0 4px 15px rgba(109, 40, 217, 0.3)'
+              }}>
+            <Plus size={18} /> Add Song
+          </motion.button>
         </div>
 
-        {loading ? (
-          <div>{[...Array(5)].map((_, i) => <SkelRow key={i} />)}</div>
-        ) : sortedSongs.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 0', border: '2px dashed var(--border)', borderRadius: 16 }}>
-            <Music2 size={36} style={{ color: 'var(--text-muted)', marginBottom: 12, opacity: 0.5 }} />
-            <p style={{ fontWeight: 600, marginBottom: 4 }}>No songs yet</p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>Add a YouTube song to get started</p>
-            <button onClick={() => setShowAddModal(true)} className="btn-primary" style={{ padding: '9px 20px', borderRadius: 10, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Plus size={14} /> Add Song
-            </button>
-          </div>
-        ) : viewMode === 'grid' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
-            {sortedSongs.map((song, i) => (
-              <motion.div key={song.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.02 }}>
-                <SongCard song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} view="grid" />
+        {/* Stats Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 48 }}>
+          {statItems.map(({ icon: Icon, label, value, color }, i) => (
+              <motion.div key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="stat-card">
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon size={20} style={{ color }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{value}</p>
+                  <p style={{ fontSize: 12, color: 'rgba(160,145,200,0.5)', marginTop: 4, fontWeight: 500 }}>{label}</p>
+                </div>
               </motion.div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {sortedSongs.map((song, i) => (
-              <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} />
-            ))}
-          </div>
-        )}
-      </section>
+          ))}
+        </div>
 
-      <AnimatePresence>
-        {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} onAdded={fetchAll} />}
-      </AnimatePresence>
-    </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 40 }}>
+          {/* Left Column: Main Library */}
+          <main>
+            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 className="section-title">Your Collection</h2>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div className="control-pill">
+                  {(['created_at', 'title'] as SortKey[]).map(k => (
+                      <button key={k}
+                              onClick={() => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('asc') } }}
+                              className="control-btn"
+                              style={{
+                                color: sortKey === k ? '#c4a7ff' : 'rgba(255,255,255,0.4)',
+                                background: sortKey === k ? 'rgba(167,139,250,0.1)' : 'transparent'
+                              }}>
+                        {k === 'created_at' ? 'Recent' : 'A–Z'}
+                        {sortKey === k && (sortDir === 'asc' ? <SortAsc size={12} /> : <SortDesc size={12} />)}
+                      </button>
+                  ))}
+                </div>
+                <div className="control-pill">
+                  {([['list', List], ['grid', LayoutGrid]] as const).map(([mode, Icon]) => (
+                      <button key={mode} onClick={() => setViewMode(mode)}
+                              className="control-btn"
+                              style={{
+                                padding: '8px 12px',
+                                color: viewMode === mode ? '#c4a7ff' : 'rgba(255,255,255,0.4)',
+                                background: viewMode === mode ? 'rgba(167,139,250,0.1)' : 'transparent'
+                              }}>
+                        <Icon size={16} />
+                      </button>
+                  ))}
+                </div>
+              </div>
+            </header>
+
+            {loading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {[...Array(6)].map((_, i) => <SkelRow key={i} />)}
+                </div>
+            ) : songs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px dashed rgba(255,255,255,0.1)' }}>
+                  <Music2 size={40} style={{ color: 'rgba(255,255,255,0.1)', marginBottom: 16 }} />
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>Your library is currently empty.</p>
+                </div>
+            ) : viewMode === 'grid' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
+                  {sortedSongs.map((song, i) => (
+                      <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} view="grid" />
+                  ))}
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {sortedSongs.map((song, i) => (
+                      <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} />
+                  ))}
+                </div>
+            )}
+          </main>
+
+          {/* Right Column: Playlists & Recents */}
+          <aside style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+            {playlists.length > 0 && (
+                <section>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <h2 className="section-title" style={{ fontSize: 24 }}>Playlists</h2>
+                    <a href="/library" style={{ fontSize: 12, color: '#a78bfa', textDecoration: 'none', fontWeight: 600 }}>All</a>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    {playlists.slice(0, 4).map((pl) => (
+                        <PlaylistCard key={pl.id} playlist={pl} />
+                    ))}
+                  </div>
+                </section>
+            )}
+
+            {recentSongs.length > 0 && (
+                <section>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <h2 className="section-title" style={{ fontSize: 24 }}>Recently Played</h2>
+                    <button
+                        onClick={() => playSong(recentSongs[0], recentSongs)}
+                        style={{ background: 'transparent', border: 'none', color: '#a78bfa', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Play All
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {recentSongs.slice(0, 5).map((song, i) => (
+                        <SongCard key={song.id} song={song} queue={recentSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} playlists={playlists} index={i} />
+                    ))}
+                  </div>
+                </section>
+            )}
+          </aside>
+        </div>
+
+        <AnimatePresence>
+          {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} onAdded={fetchAll} />}
+        </AnimatePresence>
+      </div>
   )
 }

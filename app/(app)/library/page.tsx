@@ -18,13 +18,13 @@ type ViewMode = 'list' | 'grid'
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5">
-      <div className="skeleton w-10 h-10 rounded-lg shrink-0" />
-      <div className="flex-1 space-y-1.5">
-        <div className="skeleton h-3.5 rounded w-2/3" />
-        <div className="skeleton h-3 rounded w-1/3" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, marginBottom: 8 }}>
+        <div className="skeleton" style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.05)', flexShrink: 0 }} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="skeleton" style={{ height: 12, width: '40%', borderRadius: 4, background: 'rgba(255,255,255,0.05)' }} />
+          <div className="skeleton" style={{ height: 10, width: '20%', borderRadius: 4, background: 'rgba(255,255,255,0.03)' }} />
+        </div>
       </div>
-    </div>
   )
 }
 
@@ -51,13 +51,13 @@ export default function LibraryPage() {
 
   const fetchSongs = async () => {
     const { data } = await supabase.from('songs').select('*')
-      .eq('user_id', user!.id).order('created_at', { ascending: false })
+        .eq('user_id', user!.id).order('created_at', { ascending: false })
     setSongs(data || [])
   }
 
   const fetchPlaylists = async () => {
     const { data } = await supabase.from('playlists').select('*')
-      .eq('user_id', user!.id).order('created_at', { ascending: false })
+        .eq('user_id', user!.id).order('created_at', { ascending: false })
     setPlaylists(data || [])
   }
 
@@ -80,139 +80,206 @@ export default function LibraryPage() {
 
   const sortedSongs = [...songs].sort((a, b) => {
     const v = sortKey === 'title'
-      ? a.title.localeCompare(b.title)
-      : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        ? a.title.localeCompare(b.title)
+        : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     return sortDir === 'asc' ? v : -v
   })
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-black">Your Library</h1>
-        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm">
-          <Plus size={15} /> Add Song
-        </motion.button>
-      </motion.div>
+      <div style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto', fontFamily: 'Geist, sans-serif' }}>
+        <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+        
+        .pill-toggle {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 4px;
+          border-radius: 14px;
+          display: flex;
+          gap: 4px;
+          width: fit-content;
+        }
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl mb-6 w-fit"
-        style={{ background: 'var(--bg-elevated)' }}>
-        {([
-          ['songs', Music2, `${songs.length} Songs`],
-          ['playlists', ListMusic, `${playlists.length} Playlists`],
-        ] as const).map(([key, Icon, label]) => (
-          <button key={key} onClick={() => setTab(key)}
-            className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all"
-            style={tab === key
-              ? { background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'white' }
-              : { color: 'var(--text-secondary)' }}>
-            <Icon size={14} /> {label}
-          </button>
-        ))}
-      </div>
+        .tab-btn {
+          padding: 8px 16px;
+          border-radius: 10px;
+          font-size: 13.5px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          border: none;
+        }
 
-      {/* Sort + view controls (songs tab only) */}
-      <AnimatePresence>
-        {tab === 'songs' && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className="flex items-center gap-2 mb-4 flex-wrap">
-            <div className="flex items-center rounded-lg overflow-hidden text-xs"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-              {(['created_at', 'title'] as SortKey[]).map(k => (
-                <button key={k} onClick={() => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else setSortKey(k) }}
-                  className="px-3 py-1.5 font-medium flex items-center gap-1 transition-colors"
-                  style={{ color: sortKey === k ? 'var(--accent)' : 'var(--text-muted)', background: sortKey === k ? 'rgba(124,106,247,0.12)' : 'transparent' }}>
-                  {k === 'created_at' ? 'Date' : 'A–Z'}
-                  {sortKey === k && (sortDir === 'asc' ? <SortAsc size={11} /> : <SortDesc size={11} />)}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center rounded-lg overflow-hidden"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-              {([['list', List], ['grid', LayoutGrid]] as const).map(([mode, Icon]) => (
-                <button key={mode} onClick={() => setViewMode(mode)}
-                  className="p-2 transition-colors"
-                  style={{ color: viewMode === mode ? 'var(--accent)' : 'var(--text-muted)', background: viewMode === mode ? 'rgba(124,106,247,0.12)' : 'transparent' }}>
-                  <Icon size={14} />
-                </button>
-              ))}
-            </div>
-            <p className="text-xs ml-1" style={{ color: 'var(--text-muted)' }}>
-              {sortedSongs.length} songs
+        .control-pill {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 10px;
+          overflow: hidden;
+          display: flex;
+        }
+
+        .control-btn {
+          padding: 6px 12px;
+          font-size: 12px;
+          font-weight: 500;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.2s;
+          color: rgba(255,255,255,0.4);
+        }
+      `}</style>
+
+        {/* Header */}
+        <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32, gap: 16 }}>
+          <div>
+            <h1 style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 42, fontWeight: 400, color: '#f5f0ff', lineHeight: 1 }}>
+              Your Library
+            </h1>
+            <p style={{ fontSize: 14, color: 'rgba(160,145,200,0.5)', marginTop: 8 }}>
+              Manage your songs and curated playlists
             </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+          <motion.button
+              whileHover={{ scale: 1.02, translateY: -1 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowAddModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+                color: 'white', border: 'none', padding: '12px 20px',
+                borderRadius: 14, fontSize: 14, fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 8,
+                boxShadow: '0 4px 15px rgba(109, 40, 217, 0.3)'
+              }}>
+            <Plus size={18} /> Add Track
+          </motion.button>
+        </header>
 
-      {/* Content */}
-      <AnimatePresence mode="wait">
-        {loading ? (
-          <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="space-y-1">
-            {[...Array(7)].map((_, i) => <SkeletonRow key={i} />)}
-          </motion.div>
-        ) : tab === 'songs' ? (
-          <motion.div key="songs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            {sortedSongs.length === 0 ? (
-              <div className="flex flex-col items-center py-20" style={{ color: 'var(--text-muted)' }}>
-                <Music2 size={40} className="mb-4 opacity-30" />
-                <p className="font-semibold mb-2">No songs yet</p>
-                <button onClick={() => setShowAddModal(true)}
-                  className="btn-primary px-5 py-2 rounded-xl text-sm">Add your first song</button>
-              </div>
-            ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {sortedSongs.map((song, i) => (
-                  <motion.div key={song.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.03 }}>
-                    <SongCard song={song} queue={sortedSongs}
-                      isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked}
-                      showDelete onDelete={() => deleteSong(song.id)}
-                      playlists={playlists} index={i} view="grid" />
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-0.5">
-                {sortedSongs.map((song, i) => (
-                  <SongCard key={song.id} song={song} queue={sortedSongs}
-                    isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked}
-                    showDelete onDelete={() => deleteSong(song.id)}
-                    playlists={playlists} index={i} view="list" />
-                ))}
-              </div>
-            )}
-          </motion.div>
-        ) : (
-          <motion.div key="playlists" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            {playlists.length === 0 ? (
-              <div className="flex flex-col items-center py-20" style={{ color: 'var(--text-muted)' }}>
-                <ListMusic size={40} className="mb-4 opacity-30" />
-                <p className="font-semibold">No playlists yet</p>
-                <p className="text-sm mt-1">Create one from the sidebar</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {playlists.map((pl, i) => (
-                  <motion.div key={pl.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.05 }}>
-                    <PlaylistCard playlist={pl} onDelete={() => deletePlaylist(pl.id)} />
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Navigation Tabs */}
+        <div className="pill-toggle" style={{ marginBottom: 32 }}>
+          {[
+            { id: 'songs', icon: Music2, label: `${songs.length} Songs` },
+            { id: 'playlists', icon: ListMusic, label: `${playlists.length} Playlists` },
+          ].map((t) => (
+              <button
+                  key={t.id}
+                  onClick={() => setTab(t.id as Tab)}
+                  className="tab-btn"
+                  style={{
+                    background: tab === t.id ? 'rgba(167, 139, 250, 0.15)' : 'transparent',
+                    color: tab === t.id ? '#c4a7ff' : 'rgba(160,145,200,0.5)',
+                    boxShadow: tab === t.id ? 'inset 0 0 0 1px rgba(167, 139, 250, 0.2)' : 'none'
+                  }}
+              >
+                <t.icon size={15} /> {t.label}
+              </button>
+          ))}
+        </div>
 
-      <AnimatePresence>
-        {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} onAdded={fetchAll} />}
-      </AnimatePresence>
-    </div>
+        {/* Sorting & View Controls */}
+        <AnimatePresence>
+          {tab === 'songs' && (
+              <motion.div
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}
+              >
+                <div className="control-pill">
+                  {(['created_at', 'title'] as SortKey[]).map(k => (
+                      <button
+                          key={k}
+                          onClick={() => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else setSortKey(k) }}
+                          className="control-btn"
+                          style={{
+                            color: sortKey === k ? '#c4a7ff' : 'rgba(255,255,255,0.4)',
+                            background: sortKey === k ? 'rgba(167,139,250,0.1)' : 'transparent'
+                          }}
+                      >
+                        {k === 'created_at' ? 'Date' : 'A–Z'}
+                        {sortKey === k && (sortDir === 'asc' ? <SortAsc size={12} /> : <SortDesc size={12} />)}
+                      </button>
+                  ))}
+                </div>
+
+                <div className="control-pill">
+                  {([['list', List], ['grid', LayoutGrid]] as const).map(([mode, Icon]) => (
+                      <button
+                          key={mode}
+                          onClick={() => setViewMode(mode)}
+                          className="control-btn"
+                          style={{
+                            padding: '8px 12px',
+                            color: viewMode === mode ? '#c4a7ff' : 'rgba(255,255,255,0.4)',
+                            background: viewMode === mode ? 'rgba(167,139,250,0.1)' : 'transparent'
+                          }}
+                      >
+                        <Icon size={16} />
+                      </button>
+                  ))}
+                </div>
+              </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Content Area */}
+        <AnimatePresence mode="wait">
+          {loading ? (
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
+                {[...Array(7)].map((_, i) => <SkeletonRow key={i} />)}
+              </motion.div>
+          ) : tab === 'songs' ? (
+              <motion.div key="songs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                {sortedSongs.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(160,145,200,0.4)' }}>
+                      <Music2 size={40} style={{ marginBottom: 16, opacity: 0.3 }} />
+                      <p style={{ fontWeight: 500, color: 'rgba(255,255,255,0.7)' }}>Your library is empty</p>
+                      <p style={{ fontSize: 13, marginTop: 4 }}>Add your favorite tracks to get started</p>
+                    </div>
+                ) : viewMode === 'grid' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
+                      {sortedSongs.map((song, i) => (
+                          <motion.div key={song.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.02 }}>
+                            <SongCard song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} view="grid" />
+                          </motion.div>
+                      ))}
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {sortedSongs.map((song, i) => (
+                          <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} view="list" />
+                      ))}
+                    </div>
+                )}
+              </motion.div>
+          ) : (
+              <motion.div key="playlists" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                {playlists.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(160,145,200,0.4)' }}>
+                      <ListMusic size={40} style={{ marginBottom: 16, opacity: 0.3 }} />
+                      <p style={{ fontWeight: 500, color: 'rgba(255,255,255,0.7)' }}>No playlists created</p>
+                      <p style={{ fontSize: 13, marginTop: 4 }}>Create one from the sidebar to organize your music</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
+                      {playlists.map((pl, i) => (
+                          <motion.div key={pl.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
+                            <PlaylistCard playlist={pl} onDelete={() => deletePlaylist(pl.id)} />
+                          </motion.div>
+                      ))}
+                    </div>
+                )}
+              </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} onAdded={fetchAll} />}
+        </AnimatePresence>
+      </div>
   )
 }

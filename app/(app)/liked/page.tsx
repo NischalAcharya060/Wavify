@@ -23,7 +23,7 @@ export default function LikedSongsPage() {
     setLoading(true)
     const [{ data: liked }, { data: pls }] = await Promise.all([
       supabase.from('liked_songs').select('*, songs(*)')
-        .eq('user_id', user!.id).order('liked_at', { ascending: false }),
+          .eq('user_id', user!.id).order('liked_at', { ascending: false }),
       supabase.from('playlists').select('*').eq('user_id', user!.id)
     ])
     setSongs((liked || []).map((l: any) => l.songs).filter(Boolean))
@@ -38,67 +38,148 @@ export default function LikedSongsPage() {
   }
 
   return (
-    <div>
-      {/* Hero */}
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg,#4c1d95 0%,#1e1b4b 50%,var(--bg-base) 100%)' }}>
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 60%,rgba(124,106,247,0.25),transparent 60%)' }} />
-        <div className="relative px-8 pt-10 pb-8 flex items-end gap-7">
-          <motion.div
-            initial={{ scale:0.85, opacity:0 }} animate={{ scale:1, opacity:1 }} transition={{ duration:0.4 }}
-            className="w-44 h-44 rounded-2xl flex items-center justify-center shadow-2xl shrink-0"
-            style={{ background: 'linear-gradient(135deg,#7c6af7,#a78bfa)', boxShadow: '0 20px 60px rgba(124,106,247,0.4)' }}>
-            <Heart size={64} fill="white" color="white" />
-          </motion.div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.5)' }}>Playlist</p>
-            <h1 className="text-5xl font-black mb-2">Liked Songs</h1>
-            <p style={{ color: 'rgba(255,255,255,0.5)' }}>{songs.length} songs</p>
+      <div style={{ fontFamily: 'Geist, sans-serif' }}>
+        <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+        
+        .play-btn-main {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #7c3aed, #5b21b6);
+          color: white;
+          border: none;
+          cursor: pointer;
+          box-shadow: 0 10px 25px rgba(109, 40, 217, 0.4);
+          transition: all 0.2s ease;
+        }
+
+        .play-btn-main:hover {
+          transform: scale(1.05) translateY(-2px);
+          box-shadow: 0 15px 30px rgba(109, 40, 217, 0.5);
+        }
+
+        .shuffle-btn {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          color: rgba(255, 255, 255, 0.7);
+          padding: 10px 20px;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .shuffle-btn:hover {
+          background: rgba(255, 255, 255, 0.08);
+          color: white;
+        }
+      `}</style>
+
+        {/* Hero Section */}
+        <div style={{
+          position: 'relative',
+          padding: '60px 32px 32px',
+          background: 'linear-gradient(to bottom, #1e1b4b 0%, #08080f 100%)',
+          overflow: 'hidden'
+        }}>
+          {/* Abstract Background Glows */}
+          <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '40%', height: '80%', background: 'radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 32, zOrigin: 10 }}>
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                style={{
+                  width: 190, height: 190, borderRadius: 24,
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                  flexShrink: 0
+                }}
+            >
+              <Heart size={80} fill="white" color="white" />
+            </motion.div>
+
+            <div style={{ paddingBottom: 8 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: '#a78bfa', marginBottom: 12 }}>
+                Playlist
+              </p>
+              <h1 style={{
+                fontFamily: 'Instrument Serif, serif', fontStyle: 'italic',
+                fontSize: 72, fontWeight: 400, color: '#fff',
+                lineHeight: 0.9, marginBottom: 16
+              }}>
+                Liked Songs
+              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
+                <span style={{ fontWeight: 600, color: '#fff' }}>{user?.email?.split('@')[0]}</span>
+                <span>•</span>
+                <span>{songs.length} tracks</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="px-8 py-6">
-        {songs.length > 0 && (
-          <div className="flex items-center gap-4 mb-6">
-            <motion.button whileHover={{ scale:1.05 }} whileTap={{ scale:0.95 }}
-              onClick={() => playSong(songs[0], songs)}
-              className="w-14 h-14 rounded-full flex items-center justify-center shadow-xl"
-              style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))' }}>
-              <Play size={22} fill="white" color="white" />
-            </motion.button>
-            <button onClick={shufflePlay} className="btn-ghost flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm">
-              <Shuffle size={15} /> Shuffle
-            </button>
-          </div>
-        )}
+        {/* Controls & List */}
+        <div style={{ padding: '24px 32px' }}>
+          {songs.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 32 }}>
+                <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => playSong(songs[0], songs)}
+                    className="play-btn-main"
+                >
+                  <Play size={28} fill="currentColor" />
+                </motion.button>
 
-        {loading ? (
-          <div className="space-y-1">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center gap-3 px-3 py-2.5">
-                <div className="skeleton w-10 h-10 rounded-lg shrink-0" />
-                <div className="flex-1 space-y-1.5">
-                  <div className="skeleton h-3.5 rounded w-3/5" />
-                  <div className="skeleton h-3 rounded w-2/5" />
-                </div>
+                <button onClick={shufflePlay} className="shuffle-btn">
+                  <Shuffle size={18} /> Shuffle
+                </button>
               </div>
-            ))}
-          </div>
-        ) : songs.length === 0 ? (
-          <div className="flex flex-col items-center py-20" style={{ color: 'var(--text-muted)' }}>
-            <Heart size={48} className="mb-4 opacity-30" />
-            <p className="font-semibold text-lg mb-1">No liked songs yet</p>
-            <p className="text-sm">Heart a song to save it here</p>
-          </div>
-        ) : (
-          <div className="space-y-0.5">
-            {songs.map((song, i) => (
-              <SongCard key={song.id} song={song} queue={songs}
-                isLiked onLikeToggle={fetchAll} playlists={playlists} index={i} />
-            ))}
-          </div>
-        )}
+          )}
+
+          {loading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {[...Array(6)].map((_, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: 12 }}>
+                      <div className="skeleton" style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.05)' }} />
+                      <div style={{ flex: 1 }}>
+                        <div className="skeleton" style={{ height: 12, width: '30%', borderRadius: 4, background: 'rgba(255,255,255,0.05)', marginBottom: 6 }} />
+                        <div className="skeleton" style={{ height: 10, width: '15%', borderRadius: 4, background: 'rgba(255,255,255,0.03)' }} />
+                      </div>
+                    </div>
+                ))}
+              </div>
+          ) : songs.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '100px 0', color: 'rgba(160,145,200,0.4)' }}>
+                <Heart size={48} strokeWidth={1.5} style={{ marginBottom: 16, opacity: 0.2 }} />
+                <h3 style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: 500 }}>No favorites yet</h3>
+                <p style={{ fontSize: 14, marginTop: 4 }}>Tap the heart on any song to save it here</p>
+              </div>
+          ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {songs.map((song, i) => (
+                    <SongCard
+                        key={song.id}
+                        song={song}
+                        queue={songs}
+                        isLiked
+                        onLikeToggle={fetchAll}
+                        playlists={playlists}
+                        index={i}
+                    />
+                ))}
+              </div>
+          )}
+        </div>
       </div>
-    </div>
   )
 }

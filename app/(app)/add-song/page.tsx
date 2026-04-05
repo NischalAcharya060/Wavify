@@ -22,10 +22,15 @@ export default function AddSongPage() {
     const videoId = extractYouTubeVideoId(url.trim())
     if (!videoId) { setError('Please enter a valid YouTube URL'); return }
     setLoading(true)
-    const title = await fetchYouTubeTitle(videoId)
-    const thumbnail = getYouTubeThumbnail(videoId)
-    setPreview({ title, thumbnail, videoId })
-    setLoading(false)
+    try {
+      const title = await fetchYouTubeTitle(videoId)
+      const thumbnail = getYouTubeThumbnail(videoId)
+      setPreview({ title, thumbnail, videoId })
+    } catch (e) {
+      setError('Could not fetch video details. Check the URL.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSave = async () => {
@@ -51,127 +56,199 @@ export default function AddSongPage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl">
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(255,0,0,0.1)' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4444">
-            <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.2 2.8 12 2.8 12 2.8s-4.2 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.2v1.9c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 21.3 12 21.3 12 21.3s4.2 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-1.9C23.3 9.1 23 7 23 7zm-13.8 8.5V8.4l8 3.6-8 3.5z"/>
-          </svg>
-        </div>
-        <h1 className="text-3xl font-black">Add Song</h1>
-      </motion.div>
-      <p className="mb-8 text-sm" style={{ color: 'var(--text-muted)' }}>
-        Paste any YouTube music video URL to save it to your library
-      </p>
+      <div style={{ padding: '32px 24px', maxWidth: 800, margin: '0 auto', fontFamily: 'Geist, sans-serif' }}>
+        <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+        
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(12px);
+          border-radius: 24px;
+          padding: 32px;
+        }
 
-      <AnimatePresence mode="wait">
-        {success ? (
-          <motion.div key="success"
-            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-            className="flex flex-col items-center gap-4 py-20 rounded-2xl"
-            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.1 }}>
-              <CheckCircle2 size={56} style={{ color: 'var(--success)' }} />
-            </motion.div>
-            <div className="text-center">
-              <p className="text-xl font-bold mb-1">Song added!</p>
-              <p style={{ color: 'var(--text-muted)' }} className="text-sm">{preview?.title}</p>
+        .url-input-wrapper {
+          position: relative;
+          display: flex;
+          gap: 12px;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.09);
+          border-radius: 18px;
+          padding: 8px;
+          transition: all 0.2s ease;
+        }
+
+        .url-input-wrapper:focus-within {
+          background: rgba(167, 139, 250, 0.05);
+          border-color: rgba(167, 139, 250, 0.4);
+          box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+        }
+
+        .url-field {
+          flex: 1;
+          background: transparent;
+          border: none;
+          color: #f0f0f8;
+          font-size: 15px;
+          padding-left: 40px;
+          outline: none;
+        }
+
+        .preview-card {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 20px;
+          overflow: hidden;
+          margin-top: 24px;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .btn-action {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: white;
+          padding: 10px 16px;
+          border-radius: 12px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary-wavify {
+          background: linear-gradient(135deg, #7c3aed, #5b21b6);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 4px 15px rgba(109, 40, 217, 0.3);
+        }
+      `}</style>
+
+        {/* Header */}
+        <header style={{ marginBottom: 40 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Music2 color="#ef4444" size={24} />
             </div>
-          </motion.div>
-        ) : (
-          <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="space-y-4">
+            <h1 style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 42, fontWeight: 400, color: '#f5f0ff', lineHeight: 1 }}>
+              Add Track
+            </h1>
+          </div>
+          <p style={{ fontSize: 14, color: 'rgba(160,145,200,0.5)', marginLeft: 52 }}>
+            Sync music from YouTube directly to your library
+          </p>
+        </header>
 
-            {/* URL input card */}
-            <div className="p-6 rounded-2xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-              <label className="block text-sm font-semibold mb-3">YouTube URL</label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Link2 size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ color: 'var(--text-muted)' }} />
-                  <input type="text" placeholder="https://youtube.com/watch?v=…"
-                    value={url} onChange={e => { setUrl(e.target.value); setPreview(null); setError('') }}
-                    onKeyDown={e => e.key === 'Enter' && handlePreview()}
-                    className="input-dark w-full pl-10 pr-4 py-3.5 rounded-xl" />
+        <AnimatePresence mode="wait">
+          {success ? (
+              <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="glass-panel" style={{ textAlign: 'center', padding: '60px 20px' }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(52, 211, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  <CheckCircle2 size={32} color="#34d399" />
                 </div>
-                <motion.button whileTap={{ scale: 0.96 }}
-                  onClick={handlePaste}
-                  className="btn-ghost px-4 rounded-xl text-sm flex items-center gap-2" title="Paste from clipboard">
-                  <ClipboardPaste size={15} />
-                </motion.button>
-                <motion.button whileTap={{ scale: 0.96 }}
-                  onClick={handlePreview} disabled={loading || !url.trim()}
-                  className="btn-primary flex items-center gap-2 px-5 rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
-                  {loading ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />}
-                  Preview
-                </motion.button>
-              </div>
-              {error && (
-                <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                  className="mt-3 text-sm" style={{ color: 'var(--danger)' }}>{error}</motion.p>
-              )}
-            </div>
+                <h2 style={{ fontSize: 24, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Successfully Synced!</h2>
+                <p style={{ color: 'rgba(160,145,200,0.6)', fontSize: 15 }}>{preview?.title}</p>
+              </motion.div>
+          ) : (
+              <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
 
-            {/* Supported formats */}
-            <div className="p-5 rounded-2xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-              <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Supported formats</p>
-              <div className="space-y-2">
-                {[
-                  'https://www.youtube.com/watch?v=VIDEO_ID',
-                  'https://youtu.be/VIDEO_ID',
-                  'https://youtube.com/shorts/VIDEO_ID',
-                ].map(ex => (
-                  <code key={ex} className="block text-xs px-3 py-2.5 rounded-lg"
-                    style={{ background: 'var(--bg-base)', color: 'var(--text-muted)' }}>
-                    {ex}
-                  </code>
-                ))}
-              </div>
-            </div>
+                <div className="glass-panel">
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(160,145,200,0.8)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Track URL
+                  </label>
 
-            {/* Preview card */}
-            <AnimatePresence>
-              {preview && (
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                  className="rounded-2xl overflow-hidden shadow-2xl"
-                  style={{ border: '1px solid var(--border)' }}>
-                  <div className="relative group">
-                    <img src={preview.thumbnail} alt={preview.title}
-                      className="w-full aspect-video object-cover" />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ background: 'rgba(0,0,0,0.45)' }}>
-                      <div className="w-14 h-14 rounded-full flex items-center justify-center"
-                        style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-                        <Play size={24} fill="white" color="white" />
-                      </div>
-                    </div>
-                    <div className="absolute inset-0 pointer-events-none"
-                      style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%)' }} />
-                    <div className="absolute bottom-0 left-0 right-0 p-5">
-                      <p className="font-bold text-white leading-snug">{preview.title}</p>
-                      <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                        ID: {preview.videoId}
-                      </p>
-                    </div>
+                  <div className="url-input-wrapper">
+                    <Link2 size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(160,145,200,0.4)' }} />
+                    <input
+                        type="text"
+                        placeholder="Paste YouTube link here..."
+                        value={url}
+                        onChange={e => { setUrl(e.target.value); setPreview(null); setError('') }}
+                        onKeyDown={e => e.key === 'Enter' && handlePreview()}
+                        className="url-field"
+                    />
+                    <button onClick={handlePaste} className="btn-action" title="Paste from clipboard">
+                      <ClipboardPaste size={16} />
+                    </button>
+                    <button
+                        onClick={handlePreview}
+                        disabled={loading || !url.trim()}
+                        className="btn-primary-wavify"
+                        style={{ opacity: loading || !url.trim() ? 0.6 : 1 }}
+                    >
+                      {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                      Preview
+                    </button>
                   </div>
-                  <div className="p-4" style={{ background: 'var(--bg-elevated)' }}>
-                    <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                      onClick={handleSave} disabled={loading}
-                      className="btn-primary w-full py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm">
-                      {loading ? <Loader2 size={15} className="animate-spin" /> : <Music2 size={15} />}
-                      {loading ? 'Saving…' : 'Save to Library'}
-                    </motion.button>
+
+                  {error && (
+                      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: '#fb7185', fontSize: 13, marginTop: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        • {error}
+                      </motion.p>
+                  )}
+
+                  <div style={{ marginTop: 32, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    {['youtube.com/watch', 'youtu.be/', 'youtube.com/shorts'].map(tag => (
+                        <span key={tag} style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.03)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                     {tag}
+                   </span>
+                    ))}
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+                </div>
+
+                {/* Preview Section */}
+                <AnimatePresence>
+                  {preview && (
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="preview-card">
+                        <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>
+                          <img src={preview.thumbnail} alt="Preview" style={{ width: '100%', height: '100%', objectCover: 'cover' }} />
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,15,1) 0%, transparent 60%)' }} />
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(124,58,237,0.3)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Play size={24} fill="#fff" color="#fff" />
+                            </div>
+                          </div>
+                          <div style={{ position: 'absolute', bottom: 20, left: 24, right: 24 }}>
+                            <p style={{ color: '#fff', fontSize: 18, fontWeight: 600, lineHeight: 1.3 }}>{preview.title}</p>
+                            <p style={{ color: 'rgba(167,139,250,0.6)', fontSize: 12, marginTop: 4 }}>Ready to sync · ID: {preview.videoId}</p>
+                          </div>
+                        </div>
+                        <div style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.02)' }}>
+                          <motion.button
+                              whileHover={{ scale: 1.01 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={handleSave}
+                              disabled={loading}
+                              style={{
+                                width: '100%', height: 48, background: '#fff', color: '#08080f',
+                                border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 14,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                                cursor: 'pointer'
+                              }}
+                          >
+                            {loading ? <Loader2 size={18} className="animate-spin" /> : <Music2 size={18} />}
+                            {loading ? 'Adding to Library...' : 'Confirm & Add Song'}
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                  )}
+                </AnimatePresence>
+
+              </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
   )
 }
