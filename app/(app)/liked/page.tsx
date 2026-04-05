@@ -93,7 +93,7 @@ export default function LikedSongsPage() {
           {/* Abstract Background Glows */}
           <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '40%', height: '80%', background: 'radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 32, zOrigin: 10 }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 32, zIndex: 10 }}>
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}

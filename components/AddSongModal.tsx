@@ -135,7 +135,7 @@ export default function AddSongModal({ onClose, onAdded }: AddSongModalProps) {
             {success ? (
                 <div className="flex flex-col items-center gap-4 py-10">
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(52, 211, 153, 0.1)', display: 'flex', alignItems: 'center', justify: 'center' }}>
+                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(52, 211, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                       <CheckCircle2 size={36} color="#34d399" />
                     </div>
                   </motion.div>
@@ -194,7 +194,7 @@ export default function AddSongModal({ onClose, onAdded }: AddSongModalProps) {
                             <img src={preview.thumbnail} alt={preview.title} className="w-full h-full object-cover" />
                             <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(18,18,26,0.95) 0%, transparent 60%)' }} />
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(124, 58, 237, 0.3)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justify: 'center' }}>
+                              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(124, 58, 237, 0.3)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Play size={20} fill="white" color="white" />
                               </div>
                             </div>
@@ -211,7 +211,7 @@ export default function AddSongModal({ onClose, onAdded }: AddSongModalProps) {
                                 style={{
                                   width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
                                   background: '#fff', color: '#08080f', fontWeight: 700, fontSize: 14,
-                                  cursor: 'pointer', display: 'flex', alignItems: 'center', justify: 'center', gap: 8
+                                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                                 }}
                             >
                               {loading ? <Loader2 size={18} className="animate-spin" /> : <Music2 size={18} />}
