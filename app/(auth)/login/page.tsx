@@ -26,14 +26,6 @@ function GoogleIcon() {
   )
 }
 
-function AppleIcon() {
-  return (
-      <svg width="16" height="16" viewBox="0 0 384 512" fill="currentColor">
-        <path d="M318.7 268.7c-.2-36.3 15.6-71.8 44.8-92.8-18.6-27.1-47.1-46.3-80.1-53-37.9-8.3-77.5 15.6-94.7 15.6-17.7 0-49.6-19.9-81.4-19.2-41.3.6-79.7 24.2-101 61.4-42.9 75-11.1 185.9 30.4 246.1 20.4 29.4 44.8 62.4 76.5 61.2 30.5-1.2 42.5-19.8 79.5-19.8 36.6 0 47.5 19.8 79.5 19.2 32.5-.6 53.9-29.8 73.9-59.2 23.4-34.1 32.9-67.1 33.4-68.8-1.1-.5-64.2-24.7-64.8-97.9zM255.8 41.6c16.5-20.2 27.5-48.4 24.4-76.6-24.1 1-53.5 16.1-70.8 36.6-15.5 18.2-29 47-25.3 74.4 26.9 2.1 55-14.1 71.7-34.4z"/>
-      </svg>
-  )
-}
-
 function Spinner() {
   return (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.75s linear infinite' }}>
@@ -56,6 +48,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
@@ -70,6 +63,11 @@ export default function LoginPage() {
     if (err) { setError(err.message); setLoading(false) } else router.push('/home')
   }
 
+  const handleGoogle = async () => {
+    setGoogleLoading(true)
+    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/home` } })
+  }
+
   return (
       <>
         <style>{`
@@ -82,24 +80,29 @@ export default function LoginPage() {
         .submit-btn-s { width: 100%; height: 46px; background: linear-gradient(135deg, #7c3aed, #5b21b6); color: white; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-size: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(109,40,217,0.4); }
         .submit-btn-s:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(109,40,217,0.55); }
         .particle { position: absolute; pointer-events: none; animation: floatUp linear infinite; }
+        @media (max-width: 480px) {
+          .login-container { padding: 12px !important; }
+          .login-card { border-radius: 18px !important; }
+          .login-header { padding: 20px 20px 16px !important; }
+          .login-body { padding: 16px 20px 24px !important; }
+          .particle { display: none; }
+        }
       `}</style>
 
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#08080f', position: 'relative', overflow: 'hidden', fontFamily: 'Geist, sans-serif' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 75% 55% at 80% 10%, rgba(88,28,235,0.16) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 15% 85%, rgba(124,58,237,0.1) 0%, transparent 55%)', pointerEvents: 'none' }} />
-
           {mounted && particles.map((p, i) => (
               <div key={i} className="particle" style={{ left: p.x, top: p.y, animationDuration: `${p.dur}s`, animationDelay: `${p.delay}s` }}>
                 <svg width={p.size} height={p.size} viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,250,0.45)" strokeWidth="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
               </div>
           ))}
 
-          <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', maxWidth: 400, position: 'relative', zIndex: 10, padding: 16 }}>
-            <div style={{ background: 'rgba(12,10,22,0.9)', backdropFilter: 'blur(32px)', borderRadius: 23, border: '1px solid rgba(139,92,246,0.18)', overflow: 'hidden' }}>
-
-              <div style={{ background: 'linear-gradient(135deg, rgba(109,40,217,0.15) 0%, rgba(88,28,235,0.07) 100%)', borderBottom: '1px solid rgba(139,92,246,0.1)', padding: '26px 32px 22px' }}>
+          <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} className="login-container" style={{ width: '100%', maxWidth: 416, position: 'relative', zIndex: 10, padding: 16 }}>
+            <div className="login-card" style={{ background: 'rgba(12,10,22,0.9)', backdropFilter: 'blur(32px)', borderRadius: 23, border: '1px solid rgba(139,92,246,0.18)', overflow: 'hidden' }}>
+              <div className="login-header" style={{ background: 'linear-gradient(135deg, rgba(109,40,217,0.15) 0%, rgba(88,28,235,0.07) 100%)', borderBottom: '1px solid rgba(139,92,246,0.1)', padding: '26px 32px 22px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><WavifyLogo /></div>
-                  <div>
+                  <div style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 12, background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><WavifyLogo /></div>
+                  <div style={{ minWidth: 0 }}>
                     <p style={{ fontWeight: 600, fontSize: 16, color: '#f0f0ff', lineHeight: 1 }}>Wavify</p>
                     <p style={{ fontSize: 11, color: 'rgba(160,145,200,0.65)', marginTop: 2 }}>Stream your world</p>
                   </div>
@@ -108,11 +111,10 @@ export default function LoginPage() {
                 <p style={{ fontSize: 13, color: 'rgba(160,145,210,0.6)' }}>Login to your account</p>
               </div>
 
-              <div style={{ padding: '22px 32px 30px' }}>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 18 }}>
-                  <button className="social-btn-s"><GoogleIcon /> Google</button>
-                  <button className="social-btn-s"><AppleIcon /> Apple</button>
-                </div>
+              <div className="login-body" style={{ padding: '22px 32px 30px' }}>
+                <button onClick={handleGoogle} disabled={googleLoading} className="social-btn-s" style={{ marginBottom: 18 }}>
+                  {googleLoading ? <Spinner /> : <GoogleIcon />} Sign in with Google
+                </button>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
                   <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
@@ -139,9 +141,7 @@ export default function LoginPage() {
                       <input type="password" value={password} onChange={e => setPassword(e.target.value)} onFocus={() => setFocusedField('pass')} onBlur={() => setFocusedField(null)} className="signup-input" style={{ padding: '0 16px 0 38px' }} placeholder="••••••••••" required />
                     </div>
                   </div>
-
                   {error && <div style={{ padding: '10px', borderRadius: 10, fontSize: 12, background: 'rgba(244,63,94,0.1)', color: '#fca5a5', border: '1px solid rgba(244,63,94,0.2)' }}>{error}</div>}
-
                   <button type="submit" disabled={loading} className="submit-btn-s">{loading ? <Spinner /> : 'Sign In'}</button>
                 </form>
 

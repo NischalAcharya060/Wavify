@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect, useCallback } from 'react'
 
 interface ContextMenuState {
@@ -12,19 +14,41 @@ export function useContextMenu() {
   const open = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    const x = Math.min(e.clientX, window.innerWidth - 200)
-    const y = Math.min(e.clientY, window.innerHeight - 240)
+
+    const menuWidth = 200
+    const menuHeight = 240
+
+    const x = e.clientX + menuWidth > window.innerWidth
+        ? e.clientX - menuWidth
+        : e.clientX
+
+    const y = e.clientY + menuHeight > window.innerHeight
+        ? e.clientY - menuHeight
+        : e.clientY
+
     setMenu({ visible: true, x, y })
   }, [])
 
-  const close = useCallback(() => setMenu(m => ({ ...m, visible: false })), [])
+  const close = useCallback(() => {
+    setMenu(prev => prev.visible ? { ...prev, visible: false } : prev)
+  }, [])
 
   useEffect(() => {
     if (!menu.visible) return
-    const h = () => close()
-    window.addEventListener('click', h)
-    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') close() })
-    return () => window.removeEventListener('click', h)
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+
+    window.addEventListener('click', close)
+    window.addEventListener('contextmenu', close)
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('click', close)
+      window.removeEventListener('contextmenu', close)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [menu.visible, close])
 
   return { menu, open, close }

@@ -55,8 +55,8 @@ export default function AddSongModal({ onClose, onAdded }: AddSongModalProps) {
   return (
       <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md"
-          style={{ background: 'rgba(8, 8, 15, 0.85)' }}
+          className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-md"
+          style={{ background: 'rgba(8, 8, 15, 0.85)', touchAction: 'none' }}
           onClick={onClose}
       >
         <style>{`
@@ -67,6 +67,8 @@ export default function AddSongModal({ onClose, onAdded }: AddSongModalProps) {
           border: 1px solid rgba(255, 255, 255, 0.1);
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(124, 58, 237, 0.1);
           border-radius: 28px;
+          width: 95%;
+          max-width: 440px;
         }
 
         .url-input-container {
@@ -97,141 +99,166 @@ export default function AddSongModal({ onClose, onAdded }: AddSongModalProps) {
           display: flex;
           align-items: center;
           gap: 8px;
+          flex-shrink: 0;
         }
 
         .modal-btn-primary:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
+
+        @media (max-width: 640px) {
+          .modal-container {
+            align-items: flex-end !important;
+            padding: 0 !important;
+          }
+          .modal-glass {
+            width: 100% !important;
+            max-width: 100% !important;
+            border-radius: 32px 32px 0 0 !important;
+            border-bottom: none !important;
+          }
+          .modal-btn-text { display: none; }
+          .modal-btn-primary { padding: 12px; }
+        }
       `}</style>
 
-        <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="modal-glass w-full max-w-md overflow-hidden"
-            onClick={e => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-7 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(124, 58, 237, 0.15)' }}>
-                <Music2 size={18} color="#a78bfa" />
-              </div>
-              <h2 style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 28, fontWeight: 400, color: '#f5f0ff' }}>
-                Add Song
-              </h2>
-            </div>
-            <button
-                onClick={onClose}
-                className="flex items-center justify-center w-9 h-9 rounded-full transition-colors hover:bg-white/5"
-                style={{ color: 'rgba(255,255,255,0.4)', border: 'none', background: 'transparent', cursor: 'pointer' }}
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="p-7">
-            {success ? (
-                <div className="flex flex-col items-center gap-4 py-10">
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(52, 211, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                      <CheckCircle2 size={36} color="#34d399" />
-                    </div>
-                  </motion.div>
-                  <div className="text-center">
-                    <p style={{ fontSize: 20, fontWeight: 600, color: '#fff' }}>Successfully Added</p>
-                    <p style={{ fontSize: 14, color: 'rgba(160,145,200,0.5)', marginTop: 4 }}>Track is now in your library</p>
-                  </div>
+        <div className="modal-container fixed inset-0 flex items-center justify-center p-4">
+          <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 50 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="modal-glass overflow-hidden"
+              onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(124, 58, 237, 0.15)' }}>
+                  <Music2 size={18} color="#a78bfa" />
                 </div>
-            ) : (
-                <>
-                  <div className="url-input-container mb-4">
-                    <div className="relative flex-1 flex items-center">
-                      <Link2 size={16} className="absolute left-3" style={{ color: 'rgba(160,145,200,0.4)' }} />
-                      <input
-                          type="text"
-                          placeholder="Paste YouTube link..."
-                          value={url}
-                          onChange={e => { setUrl(e.target.value); setPreview(null); setError('') }}
-                          onKeyDown={e => e.key === 'Enter' && handlePreview()}
-                          style={{
-                            width: '100%', background: 'transparent', border: 'none',
-                            padding: '12px 12px 12px 40px', color: '#fff', outline: 'none',
-                            fontSize: '14px'
-                          }}
-                          autoFocus
-                      />
+                <h2 style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 26, fontWeight: 400, color: '#f5f0ff' }}>
+                  Add Song
+                </h2>
+              </div>
+              <button
+                  onClick={onClose}
+                  className="flex items-center justify-center w-9 h-9 rounded-full transition-colors hover:bg-white/5"
+                  style={{ color: 'rgba(255,255,255,0.4)', border: 'none', background: 'transparent', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 md:p-7">
+              {success ? (
+                  <div className="flex flex-col items-center gap-4 py-10">
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                      <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(52, 211, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                        <CheckCircle2 size={36} color="#34d399" />
+                      </div>
+                    </motion.div>
+                    <div className="text-center">
+                      <p style={{ fontSize: 20, fontWeight: 600, color: '#fff' }}>Successfully Added</p>
+                      <p style={{ fontSize: 14, color: 'rgba(160,145,200,0.5)', marginTop: 4 }}>Track is now in your library</p>
                     </div>
-                    <button
-                        onClick={handlePreview}
-                        disabled={loading || !url.trim()}
-                        className="modal-btn-primary"
-                    >
-                      {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-                      Preview
-                    </button>
                   </div>
-
-                  {error && (
-                      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                className="text-sm mb-4 flex items-center gap-2" style={{ color: '#fb7185' }}>
-                        <X size={14} /> {error}
-                      </motion.p>
-                  )}
-
-                  <AnimatePresence>
-                    {preview && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              ) : (
+                  <>
+                    <div className="url-input-container mb-4">
+                      <div className="relative flex-1 flex items-center">
+                        <Link2 size={16} className="absolute left-3" style={{ color: 'rgba(160,145,200,0.4)' }} />
+                        <input
+                            type="text"
+                            placeholder="Paste YouTube link..."
+                            value={url}
+                            onChange={e => { setUrl(e.target.value); setPreview(null); setError('') }}
+                            onKeyDown={e => e.key === 'Enter' && handlePreview()}
                             style={{
-                              background: 'rgba(255,255,255,0.03)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '20px',
-                              overflow: 'hidden'
-                            }}>
-                          <div className="relative aspect-video">
-                            <img src={preview.thumbnail} alt={preview.title} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(18,18,26,0.95) 0%, transparent 60%)' }} />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(124, 58, 237, 0.3)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Play size={20} fill="white" color="white" />
+                              width: '100%', background: 'transparent', border: 'none',
+                              padding: '12px 12px 12px 40px', color: '#fff', outline: 'none',
+                              fontSize: '14px'
+                            }}
+                            autoFocus
+                        />
+                      </div>
+                      <button
+                          onClick={handlePreview}
+                          disabled={loading || !url.trim()}
+                          className="modal-btn-primary"
+                      >
+                        {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                        <span className="modal-btn-text">Preview</span>
+                      </button>
+                    </div>
+
+                    {error && (
+                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                  className="text-sm mb-4 flex items-center gap-2" style={{ color: '#fb7185' }}>
+                          <X size={14} /> {error}
+                        </motion.p>
+                    )}
+
+                    <AnimatePresence mode="wait">
+                      {preview ? (
+                          <motion.div
+                              key="preview"
+                              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              style={{
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                borderRadius: '20px',
+                                overflow: 'hidden'
+                              }}>
+                            <div className="relative aspect-video">
+                              <img src={preview.thumbnail} alt={preview.title} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(18,18,26,0.95) 0%, transparent 60%)' }} />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(124, 58, 237, 0.3)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Play size={20} fill="white" color="white" />
+                                </div>
+                              </div>
+                              <div className="absolute bottom-4 left-4 right-4">
+                                <p style={{ color: '#fff', fontSize: 14, fontWeight: 600, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                  {preview.title}
+                                </p>
                               </div>
                             </div>
-                            <div className="absolute bottom-4 left-4 right-4">
-                              <p style={{ color: '#fff', fontSize: 14, fontWeight: 600, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                {preview.title}
-                              </p>
+                            <div className="p-4">
+                              <button
+                                  onClick={handleSave}
+                                  disabled={loading}
+                                  style={{
+                                    width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
+                                    background: '#fff', color: '#08080f', fontWeight: 700, fontSize: 14,
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                    transition: 'transform 0.1s active'
+                                  }}
+                                  onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+                                  onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                              >
+                                {loading ? <Loader2 size={18} className="animate-spin" /> : <Music2 size={18} />}
+                                {loading ? 'Adding to Library...' : 'Confirm & Add Song'}
+                              </button>
                             </div>
-                          </div>
-                          <div className="p-4">
-                            <button
-                                onClick={handleSave}
-                                disabled={loading}
-                                style={{
-                                  width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
-                                  background: '#fff', color: '#08080f', fontWeight: 700, fontSize: 14,
-                                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-                                }}
-                            >
-                              {loading ? <Loader2 size={18} className="animate-spin" /> : <Music2 size={18} />}
-                              {loading ? 'Adding to Library...' : 'Confirm & Add Song'}
-                            </button>
-                          </div>
-                        </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {!preview && !loading && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <Music2 size={16} color="rgba(255,255,255,0.2)" />
-                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>Supports Watch links, Shorts, and youtu.be</span>
-                      </div>
-                  )}
-                </>
-            )}
-          </div>
-        </motion.div>
+                          </motion.div>
+                      ) : !loading && (
+                          <motion.div
+                              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+                          >
+                            <Music2 size={16} color="rgba(255,255,255,0.2)" />
+                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>Supports YouTube links, Shorts, and clips</span>
+                          </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </motion.div>
   )
 }

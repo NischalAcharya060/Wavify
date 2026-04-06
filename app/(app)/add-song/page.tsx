@@ -56,7 +56,7 @@ export default function AddSongPage() {
   }
 
   return (
-      <div style={{ padding: '32px 24px', maxWidth: 800, margin: '0 auto', fontFamily: 'Geist, sans-serif' }}>
+      <div className="add-song-container" style={{ padding: '32px 24px', maxWidth: 800, margin: '0 auto', fontFamily: 'Geist, sans-serif' }}>
         <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
         
@@ -81,7 +81,7 @@ export default function AddSongPage() {
 
         .url-input-wrapper:focus-within {
           background: rgba(167, 139, 250, 0.05);
-          border-color: rgba(167, 139, 250, 0.4);
+          border-color: rgba(167, 139, 250, 0.5);
           box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
         }
 
@@ -93,6 +93,7 @@ export default function AddSongPage() {
           font-size: 15px;
           padding-left: 40px;
           outline: none;
+          min-width: 0;
         }
 
         .preview-card {
@@ -113,6 +114,7 @@ export default function AddSongPage() {
           cursor: pointer;
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 8px;
           font-size: 14px;
           transition: all 0.2s;
@@ -132,22 +134,49 @@ export default function AddSongPage() {
           cursor: pointer;
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 8px;
           box-shadow: 0 4px 15px rgba(109, 40, 217, 0.3);
+          white-space: nowrap;
+        }
+
+        @media (max-width: 640px) {
+          .add-song-container { padding: 24px 16px !important; }
+          .glass-panel { padding: 20px !important; }
+          .url-input-wrapper { 
+            flex-direction: column; 
+            background: transparent;
+            border: none;
+            padding: 0;
+            gap: 16px;
+          }
+          .url-field-container {
+             background: rgba(255, 255, 255, 0.04);
+             border: 1px solid rgba(255, 255, 255, 0.09);
+             border-radius: 14px;
+             padding: 12px;
+             position: relative;
+          }
+          .url-field { padding-left: 36px; width: 100%; }
+          .btn-primary-wavify { width: 100%; height: 48px; }
+          .page-title { font-size: 32px !important; }
+          .tag-cloud { display: none !important; }
+          .preview-title { font-size: 16px !important; }
+          .header-subtext { marginLeft: 0 !important; marginTop: 8px; }
         }
       `}</style>
 
         {/* Header */}
         <header style={{ marginBottom: 40 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Music2 color="#ef4444" size={24} />
             </div>
-            <h1 style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 42, fontWeight: 400, color: '#f5f0ff', lineHeight: 1 }}>
+            <h1 className="page-title" style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 42, fontWeight: 400, color: '#f5f0ff', lineHeight: 1 }}>
               Add Track
             </h1>
           </div>
-          <p style={{ fontSize: 14, color: 'rgba(160,145,200,0.5)', marginLeft: 52 }}>
+          <p className="header-subtext" style={{ fontSize: 14, color: 'rgba(160,145,200,0.5)', marginLeft: 52 }}>
             Sync music from YouTube directly to your library
           </p>
         </header>
@@ -170,18 +199,21 @@ export default function AddSongPage() {
                   </label>
 
                   <div className="url-input-wrapper">
-                    <Link2 size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(160,145,200,0.4)' }} />
-                    <input
-                        type="text"
-                        placeholder="Paste YouTube link here..."
-                        value={url}
-                        onChange={e => { setUrl(e.target.value); setPreview(null); setError('') }}
-                        onKeyDown={e => e.key === 'Enter' && handlePreview()}
-                        className="url-field"
-                    />
-                    <button onClick={handlePaste} className="btn-action" title="Paste from clipboard">
-                      <ClipboardPaste size={16} />
-                    </button>
+                    <div className="url-field-container" style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <Link2 size={18} style={{ position: 'absolute', left: 16, color: 'rgba(160,145,200,0.4)' }} />
+                      <input
+                          type="text"
+                          placeholder="Paste YouTube link here..."
+                          value={url}
+                          onChange={e => { setUrl(e.target.value); setPreview(null); setError('') }}
+                          onKeyDown={e => e.key === 'Enter' && handlePreview()}
+                          className="url-field"
+                      />
+                      <button onClick={handlePaste} className="btn-action" title="Paste from clipboard" style={{ border: 'none', padding: '8px' }}>
+                        <ClipboardPaste size={16} />
+                      </button>
+                    </div>
+
                     <button
                         onClick={handlePreview}
                         disabled={loading || !url.trim()}
@@ -189,7 +221,7 @@ export default function AddSongPage() {
                         style={{ opacity: loading || !url.trim() ? 0.6 : 1 }}
                     >
                       {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-                      Preview
+                      Preview Track
                     </button>
                   </div>
 
@@ -199,7 +231,7 @@ export default function AddSongPage() {
                       </motion.p>
                   )}
 
-                  <div style={{ marginTop: 32, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <div className="tag-cloud" style={{ marginTop: 32, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     {['youtube.com/watch', 'youtu.be/', 'youtube.com/shorts'].map(tag => (
                         <span key={tag} style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.03)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
                      {tag}
@@ -214,14 +246,14 @@ export default function AddSongPage() {
                       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="preview-card">
                         <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>
                           <img src={preview.thumbnail} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,15,1) 0%, transparent 60%)' }} />
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,15,1) 0%, transparent 80%)' }} />
                           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(124,58,237,0.3)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               <Play size={24} fill="#fff" color="#fff" />
                             </div>
                           </div>
-                          <div style={{ position: 'absolute', bottom: 20, left: 24, right: 24 }}>
-                            <p style={{ color: '#fff', fontSize: 18, fontWeight: 600, lineHeight: 1.3 }}>{preview.title}</p>
+                          <div style={{ position: 'absolute', bottom: 16, left: 20, right: 20 }}>
+                            <p className="preview-title" style={{ color: '#fff', fontSize: 18, fontWeight: 600, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{preview.title}</p>
                             <p style={{ color: 'rgba(167,139,250,0.6)', fontSize: 12, marginTop: 4 }}>Ready to sync · ID: {preview.videoId}</p>
                           </div>
                         </div>

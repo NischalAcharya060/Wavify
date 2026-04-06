@@ -9,7 +9,7 @@ import SongCard from '@/components/SongCard'
 import PlaylistCard from '@/components/PlaylistCard'
 import AddSongModal from '@/components/AddSongModal'
 import { usePlayer } from '@/lib/PlayerContext'
-import { Plus, Music2, Disc3, Clock, Heart, Play, LayoutGrid, List, SortAsc, SortDesc, Sparkles } from 'lucide-react'
+import { Plus, Music2, Disc3, Clock, Heart, LayoutGrid, List, SortAsc, SortDesc, Sparkles } from 'lucide-react'
 
 type SortKey = 'created_at' | 'title'
 type SortDir = 'asc' | 'desc'
@@ -93,7 +93,7 @@ export default function HomePage() {
   ]
 
   return (
-      <div style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto', fontFamily: 'Geist, sans-serif' }}>
+      <div className="home-container" style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto', fontFamily: 'Geist, sans-serif' }}>
         <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
         
@@ -143,20 +143,41 @@ export default function HomePage() {
           align-items: center;
           gap: 6px;
         }
+
+        .main-layout {
+          display: grid;
+          grid-template-columns: 1fr 340px;
+          gap: 40px;
+        }
+
+        @media (max-width: 1024px) {
+          .main-layout { grid-template-columns: 1fr; gap: 48px; }
+          .home-header { flex-direction: column; align-items: flex-start !important; }
+          .add-song-btn { width: 100%; justify-content: center; margin-top: 10px; }
+        }
+
+        @media (max-width: 640px) {
+          .home-container { padding: 20px 16px !important; }
+          .home-greeting { font-size: 36px !important; }
+          .stats-grid { grid-template-columns: 1fr 1fr !important; }
+          .section-header { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+          .control-group { width: 100%; justify-content: space-between; }
+        }
       `}</style>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, gap: 16 }}>
+        <div className="home-header" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, gap: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#a78bfa', marginBottom: 8 }}>
               <Sparkles size={14} />
               <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Welcome back</span>
             </div>
-            <h1 style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 48, fontWeight: 400, color: '#fff', lineHeight: 1 }}>
+            <h1 className="home-greeting" style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 48, fontWeight: 400, color: '#fff', lineHeight: 1 }}>
               {greeting()}, {user?.email?.split('@')[0]}
             </h1>
           </div>
           <motion.button
+              className="add-song-btn"
               whileHover={{ scale: 1.02, translateY: -1 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowAddModal(true)}
@@ -172,7 +193,7 @@ export default function HomePage() {
         </div>
 
         {/* Stats Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 48 }}>
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 48 }}>
           {statItems.map(({ icon: Icon, label, value, color }, i) => (
               <motion.div key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="stat-card">
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -186,12 +207,12 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 40 }}>
+        <div className="main-layout">
           {/* Left Column: Main Library */}
           <main>
-            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <header className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 className="section-title">Your Collection</h2>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div className="control-group" style={{ display: 'flex', gap: 10 }}>
                 <div className="control-pill">
                   {(['created_at', 'title'] as SortKey[]).map(k => (
                       <button key={k}
@@ -254,7 +275,7 @@ export default function HomePage() {
                     <h2 className="section-title" style={{ fontSize: 24 }}>Playlists</h2>
                     <a href="/library" style={{ fontSize: 12, color: '#a78bfa', textDecoration: 'none', fontWeight: 600 }}>All</a>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
                     {playlists.slice(0, 4).map((pl) => (
                         <PlaylistCard key={pl.id} playlist={pl} />
                     ))}

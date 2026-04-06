@@ -13,6 +13,7 @@ export interface Playlist {
   name: string
   user_id: string
   created_at: string
+  song_count?: number
 }
 
 export interface PlaylistSong {
@@ -42,4 +43,8 @@ export interface RecentlyPlayed {
 export interface User {
   id: string
   email?: string
+  avatar_url?: string
 }
+
+export type NewSong = Omit<Song, 'id' | 'created_at'>
+export type NewPlaylist = Omit<Playlist, 'id' | 'created_at'>
