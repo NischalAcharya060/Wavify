@@ -9,7 +9,7 @@ import SongCard from '@/components/SongCard'
 import PlaylistCard from '@/components/PlaylistCard'
 import AddSongModal from '@/components/AddSongModal'
 import { usePlayer } from '@/lib/PlayerContext'
-import { Plus, Music2, Disc3, Clock, Heart, LayoutGrid, List, SortAsc, SortDesc, Sparkles } from 'lucide-react'
+import { Plus, Music2, Disc3, Clock, Heart, LayoutGrid, List, SortAsc, SortDesc, Sparkles, ShieldCheck } from 'lucide-react'
 
 type SortKey = 'created_at' | 'title'
 type SortDir = 'asc' | 'desc'
@@ -40,6 +40,9 @@ export default function HomePage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const supabase = createClient()
+
+  // --- Logic for Username Consistency ---
+  const displayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
 
   const greeting = () => {
     const h = new Date().getHours()
@@ -165,15 +168,25 @@ export default function HomePage() {
         }
       `}</style>
 
-        {/* Header */}
+        {/* Header Section */}
         <div className="home-header" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, gap: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#a78bfa', marginBottom: 8 }}>
               <Sparkles size={14} />
-              <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Welcome back</span>
+              <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Personal Collection</span>
             </div>
-            <h1 className="home-greeting" style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 48, fontWeight: 400, color: '#fff', lineHeight: 1 }}>
-              {greeting()}, {user?.email?.split('@')[0]}
+            <h1 className="home-greeting" style={{
+              fontFamily: 'Instrument Serif, serif',
+              fontStyle: 'italic',
+              fontSize: 48,
+              fontWeight: 400,
+              color: '#fff',
+              lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12
+            }}>
+              {greeting()}, {displayName}
             </h1>
           </div>
           <motion.button
@@ -183,7 +196,7 @@ export default function HomePage() {
               onClick={() => setShowAddModal(true)}
               style={{
                 background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
-                color: 'white', border: 'none', padding: '12px 20px',
+                color: 'white', border: 'none', padding: '12px 24px',
                 borderRadius: 14, fontSize: 14, fontWeight: 600,
                 display: 'flex', alignItems: 'center', gap: 8,
                 boxShadow: '0 4px 15px rgba(109, 40, 217, 0.3)'
@@ -208,7 +221,7 @@ export default function HomePage() {
         </div>
 
         <div className="main-layout">
-          {/* Left Column: Main Library */}
+          {/* Main Library Column */}
           <main>
             <header className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 className="section-title">Your Collection</h2>
@@ -267,7 +280,7 @@ export default function HomePage() {
             )}
           </main>
 
-          {/* Right Column: Playlists & Recents */}
+          {/* Right Aside Column */}
           <aside style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
             {playlists.length > 0 && (
                 <section>

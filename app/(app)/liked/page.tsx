@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { Song, Playlist } from '@/lib/types'
 import SongCard from '@/components/SongCard'
 import { usePlayer } from '@/lib/PlayerContext'
-import { Heart, Play, Shuffle } from 'lucide-react'
+import { Heart, Play, Shuffle, ShieldCheck } from 'lucide-react'
 
 export default function LikedSongsPage() {
     const { user } = useAuth()
@@ -16,6 +16,9 @@ export default function LikedSongsPage() {
     const [loading, setLoading] = useState(true)
     const { playSong } = usePlayer()
     const supabase = createClient()
+
+    // --- Logic for Username Consistency ---
+    const displayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
 
     useEffect(() => { if (user) fetchAll() }, [user])
 
@@ -43,16 +46,10 @@ export default function LikedSongsPage() {
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
         
         .play-btn-main {
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          width: 56px; height: 56px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
           background: linear-gradient(135deg, #7c3aed, #5b21b6);
-          color: white;
-          border: none;
-          cursor: pointer;
+          color: white; border: none; cursor: pointer;
           box-shadow: 0 10px 25px rgba(109, 40, 217, 0.4);
           transition: all 0.2s ease;
         }
@@ -66,49 +63,23 @@ export default function LikedSongsPage() {
           background: rgba(255, 255, 255, 0.04);
           border: 1px solid rgba(255, 255, 255, 0.08);
           color: rgba(255, 255, 255, 0.7);
-          padding: 10px 20px;
-          border-radius: 12px;
-          font-size: 14px;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
+          padding: 10px 20px; border-radius: 12px;
+          font-size: 14px; font-weight: 500;
+          display: flex; align-items: center; gap: 8px;
+          cursor: pointer; transition: all 0.2s;
         }
 
+        .shuffle-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
         @media (max-width: 768px) {
-          .hero-section {
-            padding: 40px 20px 24px !important;
-            text-align: center;
-          }
-          .hero-content {
-            flex-direction: column !important;
-            align-items: center !important;
-            gap: 20px !important;
-          }
-          .hero-image {
-            width: 140px !important;
-            height: 140px !important;
-          }
-          .hero-image svg {
-            width: 50px !important;
-            height: 50px !important;
-          }
-          .hero-title {
-            font-size: 48px !important;
-            margin-bottom: 8px !important;
-          }
-          .hero-stats {
-            justify-content: center;
-          }
-          .content-body {
-            padding: 20px !important;
-          }
-          .controls-row {
-            justify-content: center;
-            gap: 12px !important;
-          }
+          .hero-section { padding: 40px 20px 24px !important; text-align: center; }
+          .hero-content { flex-direction: column !important; align-items: center !important; gap: 20px !important; }
+          .hero-image { width: 140px !important; height: 140px !important; }
+          .hero-image svg { width: 50px !important; height: 50px !important; }
+          .hero-title { font-size: 48px !important; margin-bottom: 8px !important; }
+          .hero-stats { justify-content: center; }
+          .content-body { padding: 20px !important; }
+          .controls-row { justify-content: center; gap: 12px !important; }
         }
       `}</style>
 
@@ -119,7 +90,6 @@ export default function LikedSongsPage() {
                 background: 'linear-gradient(to bottom, #1e1b4b 0%, #08080f 100%)',
                 overflow: 'hidden'
             }}>
-                {/* Abstract Background Glows */}
                 <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '40%', height: '80%', background: 'radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
                 <div className="hero-content" style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 32, zIndex: 10 }}>
@@ -150,7 +120,9 @@ export default function LikedSongsPage() {
                             Liked Songs
                         </h1>
                         <div className="hero-stats" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
-                            <span style={{ fontWeight: 600, color: '#fff' }}>{user?.email?.split('@')[0]}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ fontWeight: 600, color: '#fff' }}>{displayName}</span>
+                            </div>
                             <span>•</span>
                             <span>{songs.length} tracks</span>
                         </div>

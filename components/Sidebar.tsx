@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
 import { Playlist } from '@/lib/types'
 import toast from 'react-hot-toast'
-import { Home, Search, Library, Heart, Plus, Music2, LogOut, ListMusic, ChevronLeft, X, Sparkles } from 'lucide-react'
+import { Home, Search, Library, Heart, Plus, Music2, LogOut, ListMusic, ChevronLeft, X, Sparkles, ShieldCheck } from 'lucide-react'
 
 interface SidebarProps {
     collapsed: boolean
@@ -22,6 +22,11 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     const [showCreate, setShowCreate] = useState(false)
     const [newName, setNewName] = useState('')
     const supabase = createClient()
+
+    // --- Logic for Username and Avatar ---
+    const googleAvatar = user?.user_metadata?.avatar_url
+    const displayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
+    const initial = displayName[0]?.toUpperCase() ?? 'U'
 
     useEffect(() => { if (user) fetchPlaylists() }, [user])
 
@@ -45,37 +50,20 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         { href: '/add-song', label: 'Add Song', icon: Plus },
     ]
 
-    // Width constants
     const sidebarW = collapsed ? 80 : 260
 
     return (
         <>
             <style>{`
                 .sidebar-link {
-                  display: flex;
-                  align-items: center;
-                  gap: 12px;
-                  padding: 10px 16px;
-                  border-radius: 12px;
-                  color: rgba(255, 255, 255, 0.5);
-                  text-decoration: none;
-                  font-size: 14px;
-                  font-weight: 500;
-                  transition: all 0.2s ease;
-                  margin: 2px 0;
-                  white-space: nowrap;
+                  display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+                  border-radius: 12px; color: rgba(255, 255, 255, 0.5);
+                  text-decoration: none; font-size: 14px; font-weight: 500;
+                  transition: all 0.2s ease; margin: 2px 0; white-space: nowrap;
                 }
-                .sidebar-link:hover {
-                  color: #fff;
-                  background: rgba(255, 255, 255, 0.04);
-                }
-                .sidebar-link.active {
-                  color: #fff;
-                  background: rgba(124, 58, 237, 0.1);
-                }
-                .sidebar-link.active svg {
-                  color: #a78bfa;
-                }
+                .sidebar-link:hover { color: #fff; background: rgba(255, 255, 255, 0.04); }
+                .sidebar-link.active { color: #fff; background: rgba(124, 58, 237, 0.1); }
+                .sidebar-link.active svg { color: #a78bfa; }
                 .playlist-scroll::-webkit-scrollbar { width: 4px; }
                 .playlist-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
             `}</style>
@@ -84,39 +72,19 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 animate={{ width: sidebarW }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 style={{
-                    flexShrink: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%',
-                    overflow: 'hidden',
-                    background: '#08080f',
-                    borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+                    flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%',
+                    overflow: 'hidden', background: '#08080f', borderRight: '1px solid rgba(255, 255, 255, 0.05)',
                     position: 'relative'
                 }}
             >
                 {/* Logo Section */}
-                <div style={{
-                    height: 80,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: collapsed ? 'center' : 'space-between',
-                    padding: collapsed ? '0' : '0 20px',
-                    flexShrink: 0
-                }}>
+                <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', padding: collapsed ? '0' : '0 20px', flexShrink: 0 }}>
                     <Link href="/home" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-                        <div style={{
-                            width: 36, height: 36, borderRadius: 10,
-                            background: 'linear-gradient(135deg, #7c3aed, #4c1d95)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0
-                        }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed, #4c1d95)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <Music2 size={20} color="white" />
                         </div>
-                        {!collapsed && (
-                            <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Wavify</span>
-                        )}
+                        {!collapsed && <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Wavify</span>}
                     </Link>
-
                     {!collapsed && (
                         <button onClick={onToggle} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}>
                             <ChevronLeft size={18} />
@@ -127,10 +95,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 {/* Primary Navigation */}
                 <nav style={{ padding: '0 12px', flexShrink: 0 }}>
                     {navItems.map(({ href, label, icon: Icon }) => (
-                        <Link key={href} href={href}
-                              className={`sidebar-link ${pathname === href ? 'active' : ''}`}
-                              style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '10px 16px' }}
-                        >
+                        <Link key={href} href={href} className={`sidebar-link ${pathname === href ? 'active' : ''}`} style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '10px 16px' }}>
                             <Icon size={20} style={{ flexShrink: 0 }} />
                             {!collapsed && <span>{label}</span>}
                         </Link>
@@ -151,37 +116,39 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     )}
 
                     {playlists.map(pl => (
-                        <Link key={pl.id} href={`/playlist/${pl.id}`}
-                              className={`sidebar-link ${pathname === `/playlist/${pl.id}` ? 'active' : ''}`}
-                              style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '8px 12px' }}>
+                        <Link key={pl.id} href={`/playlist/${pl.id}`} className={`sidebar-link ${pathname === `/playlist/${pl.id}` ? 'active' : ''}`} style={{ justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '12px 0' : '8px 12px' }}>
                             <ListMusic size={20} style={{ flexShrink: 0 }} />
                             {!collapsed && <span style={{ textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{pl.name}</span>}
                         </Link>
                     ))}
                 </div>
 
-                {/* Sidebar Footer - Fixes the Logout Shift */}
+                {/* Updated Sidebar Footer */}
                 <div style={{ padding: '16px', flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
                     {!collapsed ? (
                         <div style={{
-                            width: '100%',
-                            background: 'rgba(255,255,255,0.03)',
-                            border: '1px solid rgba(255,255,255,0.05)',
+                            width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
                             borderRadius: 16, padding: '12px'
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                                <div style={{
-                                    width: 36, height: 36, borderRadius: 10,
-                                    background: 'linear-gradient(135deg, #7c3aed, #4c1d95)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0
-                                }}>
-                                    {user?.email?.[0]?.toUpperCase()}
-                                </div>
+                                {googleAvatar ? (
+                                    <img src={googleAvatar} alt="User" style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover' }} />
+                                ) : (
+                                    <div style={{
+                                        width: 36, height: 36, borderRadius: 10,
+                                        background: 'linear-gradient(135deg, #7c3aed, #4c1d95)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0
+                                    }}>
+                                        {initial}
+                                    </div>
+                                )}
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {user?.email?.split('@')[0]}
+                                    <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        {displayName}
+                                        <ShieldCheck size={12} color="#10b981" />
                                     </p>
+                                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</p>
                                 </div>
                             </div>
                             <button onClick={signOut} style={{
@@ -193,52 +160,40 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                             </button>
                         </div>
                     ) : (
-                        <button onClick={signOut} style={{
-                            width: 48, height: 48, borderRadius: 12,
-                            background: 'rgba(251, 113, 133, 0.1)', border: 'none',
-                            color: '#fb7185', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                            <LogOut size={20} />
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+                            {/* Small Avatar for Collapsed state */}
+                            <Link href="/profile">
+                                {googleAvatar ? (
+                                    <img src={googleAvatar} alt="User" style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                ) : (
+                                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#fff' }}>
+                                        {initial}
+                                    </div>
+                                )}
+                            </Link>
+                            <button onClick={signOut} style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(251, 113, 133, 0.1)', border: 'none', color: '#fb7185', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <LogOut size={20} />
+                            </button>
+                        </div>
                     )}
                 </div>
             </motion.aside>
 
-            {/* Create Playlist Modal (Kept same) */}
+            {/* Modal remains the same */}
             <AnimatePresence>
                 {showCreate && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        style={{
-                            position: 'fixed', inset: 0, zIndex: 2000,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)'
-                        }}
+                        style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}
                         onClick={() => setShowCreate(false)}
                     >
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            style={{
-                                background: '#12121a', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: 24, padding: 32, width: '90%', maxWidth: 400,
-                            }}
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            style={{ background: '#12121a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 24, padding: 32, width: '90%', maxWidth: 400 }}
                             onClick={e => e.stopPropagation()}
                         >
                             <h3 style={{ fontWeight: 800, fontSize: 20, color: '#fff', marginBottom: 20 }}>New Playlist</h3>
-                            <input
-                                type="text"
-                                placeholder="Playlist name"
-                                value={newName}
-                                onChange={e => setNewName(e.target.value)}
-                                style={{
-                                    width: '100%', background: 'rgba(255,255,255,0.05)',
-                                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
-                                    padding: '12px', color: '#fff', marginBottom: 24, outline: 'none'
-                                }}
-                            />
+                            <input type="text" placeholder="Playlist name" value={newName} onChange={e => setNewName(e.target.value)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px', color: '#fff', marginBottom: 24, outline: 'none' }} />
                             <div style={{ display: 'flex', gap: 12 }}>
                                 <button onClick={() => setShowCreate(false)} style={{ flex: 1, padding: '12px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none' }}>Cancel</button>
                                 <button onClick={createPlaylist} style={{ flex: 1, padding: '12px', borderRadius: 12, background: '#fff', color: '#08080f', border: 'none', fontWeight: 700 }}>Create</button>
