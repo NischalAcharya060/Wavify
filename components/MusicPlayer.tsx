@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayer } from '@/lib/PlayerContext'
 import { useAuth } from '@/lib/AuthContext'
 import { createClient } from '@/lib/supabase/client'
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Shuffle, Repeat, Repeat1, Music2, Timer, Zap } from 'lucide-react'
+import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts'
+import QueuePanel from '@/components/QueuePanel'
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Shuffle, Repeat, Repeat1, Music2, Timer, Zap, ListMusic, AlertCircle } from 'lucide-react'
 
 function EqBars() {
   return (
@@ -52,8 +54,14 @@ export default function MusicPlayer({ isCollapsed = false }: { isCollapsed?: boo
   const supabase = createClient()
   const [playerReady, setPlayerReady] = useState(false)
   const [showSleep, setShowSleep] = useState(false)
+  const [showQueue, setShowQueue] = useState(false)
+  const [playerError, setPlayerError] = useState(false)
+  const [isLoadingTrack, setIsLoadingTrack] = useState(false)
   const ytPlayer = useRef<any>(null)
   const progressInterval = useRef<any>(null)
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts()
 
   useEffect(() => {
     if ((window as any).YT?.Player) { setPlayerReady(true); return }
@@ -64,20 +72,32 @@ export default function MusicPlayer({ isCollapsed = false }: { isCollapsed?: boo
 
   useEffect(() => {
     if (!currentSong || !playerReady) return
+    setPlayerError(false)
+    setIsLoadingTrack(true)
     const init = () => {
       if (ytPlayer.current?.loadVideoById) { ytPlayer.current.loadVideoById(currentSong.video_id); return }
       ytPlayer.current = new (window as any).YT.Player('yt-player', {
         videoId: currentSong.video_id,
         playerVars: { autoplay: 1, controls: 0, playsinline: 1 },
         events: {
-          onReady(e: any) { playerRef.current = e.target; e.target.setVolume(isMuted ? 0 : volume); if (isPlaying) e.target.playVideo() },
+          onReady(e: any) {
+            playerRef.current = e.target
+            e.target.setVolume(isMuted ? 0 : volume)
+            if (isPlaying) e.target.playVideo()
+            setIsLoadingTrack(false)
+          },
           onStateChange(e: any) {
             if (e.data === 0) nextSong()
             if (e.data === 1) {
               setDuration(e.target.getDuration())
+              setIsLoadingTrack(false)
               clearInterval(progressInterval.current)
               progressInterval.current = setInterval(() => { if (e.target.getCurrentTime) setCurrentTime(e.target.getCurrentTime()) }, 500)
             }
+          },
+          onError() {
+            setPlayerError(true)
+            setIsLoadingTrack(false)
           }
         }
       })
@@ -99,73 +119,103 @@ export default function MusicPlayer({ isCollapsed = false }: { isCollapsed?: boo
   if (!currentSong) return null;
 
   return (
-      <div className="player-wrapper" style={{
-        height: 96, position: 'fixed', bottom: 0,
-        left: isCollapsed ? '80px' : '260px',
-        right: 0, background: 'rgba(8, 8, 15, 0.95)', backdropFilter: 'blur(30px)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.05)', padding: '0 24px',
-        zIndex: 40, display: 'flex', alignItems: 'center',
-        transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-      }}>
-        <style>{`
-        .player-range { -webkit-appearance: none; background: rgba(255,255,255,0.05); height: 4px; border-radius: 2px; outline: none; cursor: pointer; width: 100%; position: relative; }
-        .player-range::-webkit-slider-runnable-track { background: linear-gradient(to right, #7c3aed var(--pct), rgba(255,255,255,0.1) var(--pct)); height: 4px; border-radius: 2px; }
-        .player-range::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: #fff; margin-top: -4px; opacity: 0; transition: opacity 0.2s; box-shadow: 0 0 10px rgba(124, 58, 237, 0.5); }
-        .player-range:hover::-webkit-slider-thumb { opacity: 1; }
-        @media (max-width: 1024px) { .player-wrapper { left: 0 !important; width: 100% !important; z-index: 110 !important; } }
-        @media (max-width: 768px) {
-          .player-wrapper { height: 80px !important; bottom: 0px !important; left: 0 !important; right: 0 !important; border-radius: 0; border: none; border-top: 1px solid rgba(255,255,255,0.1); }
-          .desktop-only { display: none !important; }
-          .player-grid { grid-template-columns: 1fr auto !important; }
-          .progress-container { position: absolute; top: 0; left: 0; right: 0; }
-        }
-      `}</style>
+      <>
+        <div className="player-wrapper" role="region" aria-label="Music player" style={{
+          height: 96, position: 'fixed', bottom: 0,
+          left: isCollapsed ? '80px' : '260px',
+          right: 0, background: 'rgba(8, 8, 15, 0.95)', backdropFilter: 'blur(30px)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.05)', padding: '0 24px',
+          zIndex: 40, display: 'flex', alignItems: 'center',
+          transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
+          <style>{`
+          .player-range { -webkit-appearance: none; background: rgba(255,255,255,0.05); height: 4px; border-radius: 2px; outline: none; cursor: pointer; width: 100%; position: relative; }
+          .player-range::-webkit-slider-runnable-track { background: linear-gradient(to right, #7c3aed var(--pct), rgba(255,255,255,0.1) var(--pct)); height: 4px; border-radius: 2px; }
+          .player-range::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: #fff; margin-top: -4px; opacity: 0; transition: opacity 0.2s; box-shadow: 0 0 10px rgba(124, 58, 237, 0.5); }
+          .player-range:hover::-webkit-slider-thumb { opacity: 1; }
+          @media (max-width: 1024px) { .player-wrapper { left: 0 !important; width: 100% !important; z-index: 110 !important; } }
+          @media (max-width: 768px) {
+            .player-wrapper { height: 80px !important; bottom: 0px !important; left: 0 !important; right: 0 !important; border-radius: 0; border: none; border-top: 1px solid rgba(255,255,255,0.1); }
+            .desktop-only { display: none !important; }
+            .player-grid { grid-template-columns: 1fr auto !important; }
+            .progress-container { position: absolute; top: 0; left: 0; right: 0; }
+          }
+        `}</style>
 
-        <div id="yt-player" style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
+          <div id="yt-player" style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
 
-        <div className="player-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 1fr) 2fr minmax(180px, 1fr)', alignItems: 'center', width: '100%', gap: 16 }}>
+          <div className="player-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 1fr) 2fr minmax(180px, 1fr)', alignItems: 'center', width: '100%', gap: 16 }}>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-            <div style={{ position: 'relative', width: 48, height: 48, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
-              <img src={currentSong.thumbnail || ''} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              {isPlaying && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><EqBars /></div>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+              <div style={{ position: 'relative', width: 48, height: 48, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
+                {currentSong.thumbnail ? (
+                  <img src={currentSong.thumbnail} alt={currentSong.title} className="img-fade-in" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: 'rgba(124,58,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Music2 size={20} color="#a78bfa" />
+                  </div>
+                )}
+                {isPlaying && !playerError && (
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <EqBars />
+                  </div>
+                )}
+                {isLoadingTrack && (
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#a78bfa', borderRadius: '50%', animation: 'spin 0.75s linear infinite' }} />
+                  </div>
+                )}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p title={currentSong.title} style={{ fontSize: 13, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentSong.title}</p>
+                <p className="desktop-only" style={{ fontSize: 11, color: 'rgba(167, 139, 250, 0.7)' }}>
+                  {playerError ? (
+                    <span style={{ color: '#fb7185', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <AlertCircle size={10} /> Playback error
+                    </span>
+                  ) : sleepTimer ? `Timer: ${sleepTimer}m` : 'Wavify Engine'}
+                </p>
+              </div>
             </div>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentSong.title}</p>
-              <p className="desktop-only" style={{ fontSize: 11, color: 'rgba(167, 139, 250, 0.7)' }}>{sleepTimer ? `Timer: ${sleepTimer}m` : 'Wavify Engine'}</p>
-            </div>
-          </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24, height: 44 }}>
-              <button className="desktop-only" onClick={toggleShuffle} style={{ background: 'none', border: 'none', color: isShuffled ? '#a78bfa' : 'rgba(255,255,255,0.3)' }}><Shuffle size={16} /></button>
-              <button onClick={prevSong} style={{ background: 'none', border: 'none', color: '#fff' }}><SkipBack size={22} fill="currentColor" /></button>
-              <button onClick={togglePlayPause} style={{ width: 42, height: 42, borderRadius: '50%', background: '#fff', color: '#08080f', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                {isPlaying ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" style={{ marginLeft: 3 }} />}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 24, height: 44 }}>
+                <button className="desktop-only" onClick={toggleShuffle} aria-label={`Shuffle ${isShuffled ? 'on' : 'off'}`} style={{ background: 'none', border: 'none', color: isShuffled ? '#a78bfa' : 'rgba(255,255,255,0.3)', cursor: 'pointer' }}><Shuffle size={16} /></button>
+                <button onClick={prevSong} aria-label="Previous track" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><SkipBack size={22} fill="currentColor" /></button>
+                <button onClick={togglePlayPause} aria-label={isPlaying ? 'Pause' : 'Play'} style={{ width: 42, height: 42, borderRadius: '50%', background: '#fff', color: '#08080f', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'transform 0.1s' }}>
+                  {isPlaying ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" style={{ marginLeft: 3 }} />}
+                </button>
+                <button onClick={nextSong} aria-label="Next track" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><SkipForward size={22} fill="currentColor" /></button>
+                <button className="desktop-only" onClick={cycleRepeat} aria-label={`Repeat ${repeatMode}`} style={{ background: 'none', border: 'none', color: repeatMode !== 'off' ? '#a78bfa' : 'rgba(255,255,255,0.3)', cursor: 'pointer' }}><RepeatIcon size={16} /></button>
+              </div>
+              <div className="progress-container" style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                <span className="desktop-only" style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', width: 35, textAlign: 'right' }}>{fmt(currentTime)}</span>
+                <input type="range" min={0} max={duration || 100} value={currentTime} step={0.1}
+                  aria-label="Seek position"
+                  onChange={(e) => {
+                    const t = Number(e.target.value); setCurrentTime(t); playerRef.current?.seekTo(t, true);
+                  }} className="player-range" style={{ '--pct': `${pct}%` } as any} />
+                <span className="desktop-only" style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', width: 35 }}>{fmt(duration)}</span>
+              </div>
+            </div>
+
+            <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowQueue(true)} aria-label="Open queue" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 4 }}>
+                <ListMusic size={18} />
               </button>
-              <button onClick={nextSong} style={{ background: 'none', border: 'none', color: '#fff' }}><SkipForward size={22} fill="currentColor" /></button>
-              <button className="desktop-only" onClick={cycleRepeat} style={{ background: 'none', border: 'none', color: repeatMode !== 'off' ? '#a78bfa' : 'rgba(255,255,255,0.3)' }}><RepeatIcon size={16} /></button>
-            </div>
-            <div className="progress-container" style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
-              <span className="desktop-only" style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', width: 35, textAlign: 'right' }}>{fmt(currentTime)}</span>
-              <input type="range" min={0} max={duration || 100} value={currentTime} step={0.1} onChange={(e) => {
-                const t = Number(e.target.value); setCurrentTime(t); playerRef.current?.seekTo(t, true);
-              }} className="player-range" style={{ '--pct': `${pct}%` } as any} />
-              <span className="desktop-only" style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', width: 35 }}>{fmt(duration)}</span>
-            </div>
-          </div>
-
-          <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'flex-end' }}>
-            <button onClick={() => setShowSleep(!showSleep)} style={{ background: 'none', border: 'none', color: sleepTimer ? '#a78bfa' : 'rgba(255,255,255,0.4)', position: 'relative' }}>
-              <Timer size={18} />
-              <AnimatePresence>{showSleep && <SleepMenu onClose={() => setShowSleep(false)} />}</AnimatePresence>
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', padding: '6px 10px', borderRadius: 10 }}>
-              <button onClick={toggleMute} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)' }}>{isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}</button>
-              <input type="range" min={0} max={100} value={isMuted ? 0 : volume} onChange={e => setVolume(Number(e.target.value))} className="player-range" style={{ width: 60, '--pct': `${isMuted ? 0 : volume}%` } as any} />
+              <button onClick={() => setShowSleep(!showSleep)} aria-label="Sleep timer" style={{ background: 'none', border: 'none', color: sleepTimer ? '#a78bfa' : 'rgba(255,255,255,0.4)', position: 'relative', cursor: 'pointer' }}>
+                <Timer size={18} />
+                <AnimatePresence>{showSleep && <SleepMenu onClose={() => setShowSleep(false)} />}</AnimatePresence>
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', padding: '6px 10px', borderRadius: 10 }}>
+                <button onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>{isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}</button>
+                <input type="range" min={0} max={100} value={isMuted ? 0 : volume} aria-label="Volume" onChange={e => setVolume(Number(e.target.value))} className="player-range" style={{ width: 60, '--pct': `${isMuted ? 0 : volume}%` } as any} />
+              </div>
             </div>
           </div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         </div>
-      </div>
+        <QueuePanel open={showQueue} onClose={() => setShowQueue(false)} />
+      </>
   )
 }

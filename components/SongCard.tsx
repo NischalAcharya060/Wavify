@@ -81,9 +81,9 @@ export default function SongCard({ song, queue, isLiked = false, onLikeToggle, o
                     cursor: 'pointer', transition: 'all 0.3s ease',
                 }}
                 onClick={handlePlay} onContextMenu={openCtx}>
-                <div style={{ aspectRatio: '1', position: 'relative', overflow: 'hidden', margin: 8, borderRadius: 14 }}>
+                <div style={{ aspectRatio: '1', position: 'relative', overflow: 'hidden', margin: 8, borderRadius: 14, background: 'rgba(255,255,255,0.03)' }}>
                     {song.thumbnail
-                        ? <img src={song.thumbnail} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <img src={song.thumbnail} alt={song.title} className="img-fade-in" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Music2 size={24} color="rgba(255,255,255,0.2)" /></div>
                     }
                     {isActive && isPlaying && (
@@ -93,7 +93,7 @@ export default function SongCard({ song, queue, isLiked = false, onLikeToggle, o
                     )}
                 </div>
                 <div style={{ padding: '0 12px 14px' }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isActive ? '#a78bfa' : '#fff' }}>{song.title}</p>
+                    <p title={song.title} style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isActive ? '#a78bfa' : '#fff' }}>{song.title}</p>
                 </div>
                 {ctxMenu.visible && <CtxMenu playlists={playlists} liked={liked} showDelete={showDelete} onLike={handleLike} onAdd={addToPlaylist} onDelete={handleDelete} x={ctxMenu.x} y={ctxMenu.y} onClose={closeCtx} />}
             </motion.div>
@@ -147,16 +147,16 @@ export default function SongCard({ song, queue, isLiked = false, onLikeToggle, o
                 </div>
 
                 {/* Thumbnail */}
-                <div className="song-thumb" style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                <div className="song-thumb" style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', flexShrink: 0, position: 'relative', background: 'rgba(255,255,255,0.03)' }}>
                     {song.thumbnail
-                        ? <img src={song.thumbnail} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <img src={song.thumbnail} alt={song.title} className="img-fade-in" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Music2 size={16} color="rgba(255,255,255,0.2)" /></div>
                     }
                 </div>
 
                 {/* Title & Artist */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    <p className="song-title" style={{ fontSize: 15, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isActive ? '#a78bfa' : '#fff' }}>
+                    <p className="song-title" title={song.title} style={{ fontSize: 15, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isActive ? '#a78bfa' : '#fff' }}>
                         {song.title}
                     </p>
                     <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>YouTube Music</p>
@@ -164,7 +164,7 @@ export default function SongCard({ song, queue, isLiked = false, onLikeToggle, o
 
                 {/* Actions */}
                 <div className="song-actions" onClick={e => e.stopPropagation()}>
-                    <button onClick={handleLike} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 10, color: liked ? '#fb7185' : 'rgba(255,255,255,0.2)' }}>
+                    <button onClick={handleLike} aria-label={liked ? 'Unlike song' : 'Like song'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 10, color: liked ? '#fb7185' : 'rgba(255,255,255,0.2)' }}>
                         <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
                     </button>
                     <div style={{ position: 'relative' }}>

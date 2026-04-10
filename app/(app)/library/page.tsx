@@ -9,6 +9,7 @@ import SongCard from '@/components/SongCard'
 import PlaylistCard from '@/components/PlaylistCard'
 import AddSongModal from '@/components/AddSongModal'
 import toast from 'react-hot-toast'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import { Plus, Music2, ListMusic, LayoutGrid, List, SortAsc, SortDesc } from 'lucide-react'
 
 type Tab = 'songs' | 'playlists'
@@ -44,15 +45,9 @@ export default function LibraryPage() {
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [deleteSongTarget, setDeleteSongTarget] = useState<string | null>(null)
+  const [deletePlaylistTarget, setDeletePlaylistTarget] = useState<string | null>(null)
   const supabase = createClient()
-
-  useEffect(() => { if (user) fetchAll() }, [user])
-
-  const fetchAll = async () => {
-    setLoading(true)
-    await Promise.all([fetchSongs(), fetchPlaylists(), fetchLiked()])
-    setLoading(false)
-  }
 
   const fetchSongs = async () => {
     const { data } = await supabase.from('songs').select('*')
@@ -85,13 +80,25 @@ export default function LibraryPage() {
     setLikedIds(new Set((data || []).map((l: any) => l.song_id)))
   }
 
+  const fetchAll = async () => {
+    setLoading(true)
+    await Promise.all([fetchSongs(), fetchPlaylists(), fetchLiked()])
+    setLoading(false)
+  }
+
+  useEffect(() => { if (user) fetchAll() }, [user])
+
   const deletePlaylist = async (id: string) => {
+    setPlaylists(prev => prev.filter(p => p.id !== id))
+    setDeletePlaylistTarget(null)
     await supabase.from('playlists').delete().eq('id', id)
     toast.success('Playlist deleted')
     fetchPlaylists()
   }
 
   const deleteSong = async (id: string) => {
+    setSongs(prev => prev.filter(s => s.id !== id))
+    setDeleteSongTarget(null)
     await supabase.from('songs').delete().eq('id', id)
     toast.success('Song deleted')
     fetchSongs()
@@ -241,14 +248,14 @@ export default function LibraryPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(165px,1fr))', gap: 14 }}>
                 {sortedSongs.map((song, i) => (
                   <motion.div key={song.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.02 }}>
-                    <SongCard song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} view="grid" />
+                    <SongCard song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => setDeleteSongTarget(song.id)} playlists={playlists} index={i} view="grid" />
                   </motion.div>
                 ))}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {sortedSongs.map((song, i) => (
-                  <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} />
+                  <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => setDeleteSongTarget(song.id)} playlists={playlists} index={i} />
                 ))}
               </div>
             )}
@@ -265,7 +272,7 @@ export default function LibraryPage() {
               <div className="grid-pl" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px,1fr))', gap: 16 }}>
                 {playlists.map((pl, i) => (
                   <motion.div key={pl.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.04 }}>
-                    <PlaylistCard playlist={pl} songCount={playlistCounts[pl.id] ?? 0} onDelete={() => deletePlaylist(pl.id)} />
+                    <PlaylistCard playlist={pl} songCount={playlistCounts[pl.id] ?? 0} onDelete={() => setDeletePlaylistTarget(pl.id)} />
                   </motion.div>
                 ))}
               </div>
@@ -277,6 +284,26 @@ export default function LibraryPage() {
       <AnimatePresence>
         {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} onAdded={fetchAll} />}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={!!deleteSongTarget}
+        onClose={() => setDeleteSongTarget(null)}
+        onConfirm={() => deleteSongTarget && deleteSong(deleteSongTarget)}
+        title="Delete Song"
+        description="This will permanently remove this song from your library and all playlists."
+        confirmLabel="Delete Song"
+        variant="danger"
+      />
+
+      <ConfirmDialog
+        open={!!deletePlaylistTarget}
+        onClose={() => setDeletePlaylistTarget(null)}
+        onConfirm={() => deletePlaylistTarget && deletePlaylist(deletePlaylistTarget)}
+        title="Delete Playlist"
+        description="This will permanently remove this playlist. Songs in your library will not be affected."
+        confirmLabel="Delete Playlist"
+        variant="danger"
+      />
     </div>
   )
 }

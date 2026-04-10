@@ -34,6 +34,20 @@ interface PlayerContextType {
 
 const PlayerContext = createContext<PlayerContextType | null>(null)
 
+// Helpers for localStorage persistence
+function loadFromStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback
+  try {
+    const stored = localStorage.getItem(key)
+    return stored ? JSON.parse(stored) : fallback
+  } catch { return fallback }
+}
+
+function saveToStorage(key: string, value: any) {
+  if (typeof window === 'undefined') return
+  try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
+}
+
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [currentSong, setCurrentSong] = useState<Song | null>(null)
   const [queue, setQueue] = useState<Song[]>([])
@@ -50,8 +64,37 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const playerRef = useRef<any>(null)
   const sleepIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const initializedRef = useRef(false)
 
-  // Sleep timer countdown - Improved cleanup and frequency
+  // Restore persisted state on mount
+  useEffect(() => {
+    if (initializedRef.current) return
+    initializedRef.current = true
+    const savedVolume = loadFromStorage<number>('wavify_volume', 80)
+    const savedShuffle = loadFromStorage<boolean>('wavify_shuffle', false)
+    const savedRepeat = loadFromStorage<RepeatMode>('wavify_repeat', 'off')
+    setVolumeState(savedVolume)
+    setIsShuffled(savedShuffle)
+    setRepeatMode(savedRepeat)
+  }, [])
+
+  // Persist volume, shuffle, repeat to localStorage
+  useEffect(() => {
+    if (!initializedRef.current) return
+    saveToStorage('wavify_volume', volume)
+  }, [volume])
+
+  useEffect(() => {
+    if (!initializedRef.current) return
+    saveToStorage('wavify_shuffle', isShuffled)
+  }, [isShuffled])
+
+  useEffect(() => {
+    if (!initializedRef.current) return
+    saveToStorage('wavify_repeat', repeatMode)
+  }, [repeatMode])
+
+  // Sleep timer countdown
   useEffect(() => {
     if (sleepTimerEnd === null) {
       if (sleepIntervalRef.current) clearInterval(sleepIntervalRef.current)
@@ -72,7 +115,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       } else {
         setSleepTimerState(remainingMinutes)
       }
-    }, 1000) // Check every second for better accuracy, UI only updates on minute change
+    }, 1000)
 
     return () => {
       if (sleepIntervalRef.current) clearInterval(sleepIntervalRef.current)
@@ -111,14 +154,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setCurrentTime(0)
       setIsPlaying(true)
     } else {
-      setIsPlaying(false) // End of queue
+      setIsPlaying(false)
     }
   }, [currentSong, queue, repeatMode])
 
   const prevSong = useCallback(() => {
     if (!currentSong || queue.length === 0) return
 
-    // If more than 3 seconds in, restart the song instead of going back
     if (currentTime > 3) {
       setCurrentTime(0)
       if (playerRef.current?.seekTo) playerRef.current.seekTo(0)
@@ -146,13 +188,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setIsShuffled(prev => {
       const next = !prev
       if (next) {
-        // Shuffling: Keep current song at the top if possible, shuffle the rest
         const otherSongs = originalQueue.filter(s => s.id !== currentSong?.id)
         const shuffled = [...otherSongs].sort(() => Math.random() - 0.5)
         if (currentSong) shuffled.unshift(currentSong)
         setQueue(shuffled)
       } else {
-        // Unshuffling: Restore original order
         setQueue(originalQueue)
       }
       return next

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, User, LogOut, Menu as MenuIcon, ShieldCheck } from 'lucide-react'
+import { ChevronLeft, ChevronRight, User, LogOut, Menu as MenuIcon, ShieldCheck, Settings, Keyboard } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
 interface NavbarProps {
@@ -30,48 +30,34 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     const initial = displayName[0]?.toUpperCase() ?? 'U'
 
     return (
-        <header className="navbar-container" style={{
+        <header className="navbar-container" role="banner" style={{
             display: 'flex', alignItems: 'center', gap: 20,
             padding: '0 32px', height: 72, flexShrink: 0,
             background: 'transparent', zIndex: 40, position: 'relative'
         }}>
             <style>{`
-                /* FIXED: Tiled Arrow Buttons to match image_33e8c5.png */
                 .nav-btn {
-                  width: 38px; 
-                  height: 38px; 
-                  border-radius: 12px;
-                  display: flex; 
-                  align-items: center; 
-                  justify-content: center;
-                  background: rgba(255, 255, 255, 0.05); 
-                  border: 1px solid rgba(255, 255, 255, 0.03);
-                  color: #fff; 
-                  cursor: pointer; 
-                  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                  width: 38px; height: 38px; border-radius: 12px;
+                  display: flex; align-items: center; justify-content: center;
+                  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.03);
+                  color: #fff; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                 }
-                .nav-btn:hover { 
-                  background: rgba(255, 255, 255, 0.08); 
-                  transform: scale(1.02);
-                }
-                .nav-btn:active {
-                  transform: scale(0.95);
-                  background: rgba(255, 255, 255, 0.1);
-                }
-                
-                /* Profile Pill Styling */
+                .nav-btn:hover { background: rgba(255, 255, 255, 0.08); transform: scale(1.02); }
+                .nav-btn:active { transform: scale(0.95); background: rgba(255, 255, 255, 0.1); }
                 .profile-trigger {
-                  display: flex; alignItems: center; gap: 8px;
+                  display: flex; align-items: center; gap: 8px;
                   padding: 4px 14px 4px 4px; border-radius: 100px;
                   border: 1px solid rgba(255, 255, 255, 0.08);
-                  background: rgba(255, 255, 255, 0.03); 
-                  cursor: pointer; transition: 0.2s;
+                  background: rgba(255, 255, 255, 0.03); cursor: pointer; transition: 0.2s;
                 }
-                .profile-trigger:hover { 
-                  background: rgba(255, 255, 255, 0.06); 
-                  border-color: rgba(255, 255, 255, 0.15); 
+                .profile-trigger:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.15); }
+                .dropdown-item {
+                  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+                  border-radius: 10px; font-size: 13px; color: #ccc; text-decoration: none;
+                  transition: background 0.15s; width: 100%; border: none; background: transparent; cursor: pointer;
+                  text-align: left;
                 }
-
+                .dropdown-item:hover { background: rgba(255,255,255,0.05); }
                 @media (max-width: 1024px) {
                   .mobile-toggle { display: flex !important; }
                   .navbar-container { padding: 0 16px !important; height: 64px !important; }
@@ -82,16 +68,16 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
             `}</style>
 
             {/* Mobile Menu */}
-            <button onClick={onMenuClick} className="nav-btn mobile-toggle" style={{ display: 'none' }}>
+            <button onClick={onMenuClick} className="nav-btn mobile-toggle" aria-label="Open menu" style={{ display: 'none' }}>
                 <MenuIcon size={20} />
             </button>
 
-            {/* Navigation History - MATCHED DESIGN */}
+            {/* Navigation History */}
             <div className="nav-history" style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => router.back()} className="nav-btn" title="Go Back">
+                <button onClick={() => router.back()} className="nav-btn" aria-label="Go back" title="Go Back">
                     <ChevronLeft size={22} strokeWidth={2.5} />
                 </button>
-                <button onClick={() => router.forward()} className="nav-btn" title="Go Forward">
+                <button onClick={() => router.forward()} className="nav-btn" aria-label="Go forward" title="Go Forward">
                     <ChevronRight size={22} strokeWidth={2.5} />
                 </button>
             </div>
@@ -102,13 +88,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                     className="profile-trigger"
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowProfile(!showProfile)}
+                    aria-label="Profile menu"
+                    aria-expanded={showProfile}
                 >
                     {googleAvatar ? (
-                        <img
-                            src={googleAvatar}
-                            alt="Avatar"
-                            style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
-                        />
+                        <img src={googleAvatar} alt="Avatar" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
                     ) : (
                         <div style={{
                             width: 28, height: 28, borderRadius: '50%',
@@ -119,10 +103,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                             {initial}
                         </div>
                     )}
-                    <span className="user-name-label" style={{
-                        fontSize: 14, fontWeight: 600, color: '#fff',
-                        marginLeft: 4
-                    }}>
+                    <span className="user-name-label" style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginLeft: 4 }}>
                         {displayName}
                     </span>
                 </motion.button>
@@ -133,10 +114,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            role="menu"
                             style={{
                                 position: 'absolute', right: 0, top: 'calc(100% + 10px)',
                                 background: '#12121a', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: 16, minWidth: 200, padding: 6,
+                                borderRadius: 16, minWidth: 220, padding: 6,
                                 boxShadow: '0 15px 30px rgba(0,0,0,0.5)', zIndex: 100
                             }}>
 
@@ -150,25 +132,34 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
                             <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '4px 8px' }} />
 
-                            <Link href="/profile" onClick={() => setShowProfile(false)}
-                                  style={{
-                                      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-                                      borderRadius: 10, fontSize: 13, color: '#ccc', textDecoration: 'none',
-                                      transition: '0.2s'
-                                  }}
-                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                            >
+                            <Link href="/profile" onClick={() => setShowProfile(false)} className="dropdown-item" role="menuitem">
                                 <User size={16} /> Account
                             </Link>
 
-                            <button onClick={() => { signOut(); setShowProfile(false) }}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                                        padding: '10px 12px', borderRadius: 10, fontSize: 13,
-                                        color: '#fb7185', background: 'transparent', border: 'none',
-                                        cursor: 'pointer', marginTop: 2
-                                    }}>
+                            <Link href="/settings" onClick={() => setShowProfile(false)} className="dropdown-item" role="menuitem">
+                                <Settings size={16} /> Settings
+                            </Link>
+
+                            <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '4px 8px' }} />
+
+                            <div style={{ padding: '6px 12px 8px' }}>
+                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginBottom: 4 }}>
+                                <Keyboard size={10} style={{ display: 'inline', marginRight: 4 }} />
+                                Quick shortcuts
+                              </p>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                {[['Space', 'Play'], ['M', 'Mute'], ['N', 'Next']].map(([key, label]) => (
+                                  <span key={key} style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: 4 }}>
+                                    <strong style={{ color: '#a78bfa' }}>{key}</strong> {label}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '4px 8px' }} />
+
+                            <button onClick={() => { signOut(); setShowProfile(false) }} className="dropdown-item" role="menuitem"
+                                    style={{ color: '#fb7185', marginTop: 2 }}>
                                 <LogOut size={16} /> Sign Out
                             </button>
                         </motion.div>

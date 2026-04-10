@@ -9,6 +9,7 @@ import { Song, Playlist } from '@/lib/types'
 import SongCard from '@/components/SongCard'
 import { usePlayer } from '@/lib/PlayerContext'
 import toast from 'react-hot-toast'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import { Play, Shuffle, ListMusic, Trash2, Pencil, Check, X, Music2 } from 'lucide-react'
 
 const themes = [
@@ -33,8 +34,6 @@ export default function PlaylistPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const { playSong } = usePlayer()
   const supabase = createClient()
-
-  useEffect(() => { if (user && id) fetchAll() }, [user, id])
 
   const fetchAll = async () => {
     setLoading(true)
@@ -71,6 +70,8 @@ export default function PlaylistPage() {
     fetchAll()
     toast.success('Playlist renamed')
   }
+
+  useEffect(() => { if (user && id) fetchAll() }, [user, id])
 
   const theme = playlist ? themes[playlist.name.charCodeAt(0) % themes.length] : themes[0]
 
@@ -137,18 +138,7 @@ export default function PlaylistPage() {
         .delete-btn { color: #fb7185 !important; border-color: rgba(251,113,133,0.15) !important; }
         .delete-btn:hover { background: rgba(251,113,133,0.08) !important; border-color: rgba(251,113,133,0.25) !important; }
 
-        .confirm-modal {
-          position: fixed; inset: 0; z-index: 50;
-          display: flex; align-items: center; justify-content: center;
-          background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-        }
-        .confirm-card {
-          background: rgba(16,14,28,0.97); border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 20px; padding: 28px; width: 100%; max-width: 360px;
-          box-shadow: 0 24px 60px rgba(0,0,0,0.6);
-        }
-
-        @media (max-width: 768px) {
+@media (max-width: 768px) {
           .pl-hero { flex-direction: column !important; align-items: center !important; text-align: center; padding: 36px 20px 24px !important; }
           .hero-art { width: 140px !important; height: 140px !important; }
           .hero-title { font-size: 42px !important; justify-content: center; }
@@ -232,6 +222,7 @@ export default function PlaylistPage() {
                 {playlist.name}
               </h1>
               <button onClick={() => setEditing(true)}
+                aria-label="Rename playlist"
                 style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', padding: 9, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all 0.15s' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.4)'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}>
@@ -268,13 +259,14 @@ export default function PlaylistPage() {
               </motion.button>
               <button
                 onClick={() => { const s = [...songs].sort(() => Math.random() - 0.5); playSong(s[0], s) }}
-                className="action-btn">
+                className="action-btn"
+                aria-label="Shuffle play playlist">
                 <Shuffle size={16} /> Shuffle
               </button>
             </>
           )}
 
-          <button onClick={() => setConfirmDelete(true)} className="action-btn delete-btn" style={{ marginLeft: 'auto' }}>
+          <button onClick={() => setConfirmDelete(true)} className="action-btn delete-btn" style={{ marginLeft: 'auto' }} aria-label="Delete playlist">
             <Trash2 size={15} /> Delete
           </button>
         </div>
@@ -324,36 +316,15 @@ export default function PlaylistPage() {
         )}
       </div>
 
-      {/* Delete confirmation modal */}
-      <AnimatePresence>
-        {confirmDelete && (
-          <motion.div className="confirm-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setConfirmDelete(false)}>
-            <motion.div className="confirm-card" initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-              transition={{ duration: 0.18 }} onClick={e => e.stopPropagation()}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(251,113,133,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-                <Trash2 size={20} style={{ color: '#fb7185' }} />
-              </div>
-              <h3 style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 22, color: '#f0ecff', marginBottom: 10 }}>
-                Delete &ldquo;{playlist.name}&rdquo;?
-              </h3>
-              <p style={{ fontSize: 13.5, color: 'rgba(160,145,200,0.6)', lineHeight: 1.55, marginBottom: 22 }}>
-                This will permanently remove the playlist. Songs in your library will not be affected.
-              </p>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => setConfirmDelete(false)}
-                  style={{ flex: 1, padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 14, fontWeight: 500, fontFamily: 'Geist, sans-serif' }}>
-                  Cancel
-                </button>
-                <button onClick={deletePlaylist}
-                  style={{ flex: 1, padding: '11px', borderRadius: 12, background: 'rgba(251,113,133,0.15)', border: '1px solid rgba(251,113,133,0.3)', color: '#fb7185', cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'Geist, sans-serif' }}>
-                  Delete Playlist
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={deletePlaylist}
+        title={`Delete "${playlist.name}"?`}
+        description="This will permanently remove the playlist. Songs in your library will not be affected."
+        confirmLabel="Delete Playlist"
+        variant="danger"
+      />
     </div>
   )
 }

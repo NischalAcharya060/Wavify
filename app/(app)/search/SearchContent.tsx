@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { Song, Playlist } from '@/lib/types'
 import SongCard from '@/components/SongCard'
 import { useDebounce } from '@/lib/useDebounce'
-import { Search, Music2, X, SearchIcon } from 'lucide-react'
+import { Search, Music2, X, SearchIcon, Clock, Trash2 } from 'lucide-react'
 
 function SkeletonRow() {
     return (
@@ -22,6 +22,17 @@ function SkeletonRow() {
     )
 }
 
+function loadRecentSearches(): string[] {
+    try {
+        const data = localStorage.getItem('wavify_recent_searches')
+        return data ? JSON.parse(data) : []
+    } catch { return [] }
+}
+
+function saveRecentSearches(searches: string[]) {
+    try { localStorage.setItem('wavify_recent_searches', JSON.stringify(searches.slice(0, 10))) } catch {}
+}
+
 function SearchContent() {
     const { user } = useAuth()
     const searchParams = useSearchParams()
@@ -32,14 +43,12 @@ function SearchContent() {
     const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
     const [loading, setLoading] = useState(false)
     const [isFocused, setIsFocused] = useState(false)
+    const [recentSearches, setRecentSearches] = useState<string[]>([])
     const supabase = createClient()
 
-    useEffect(() => { if (user) { fetchPlaylists(); fetchLiked() } }, [user])
-
     useEffect(() => {
-        if (debouncedQuery && user) doSearch(debouncedQuery)
-        else setResults([])
-    }, [debouncedQuery, user])
+        setRecentSearches(loadRecentSearches())
+    }, [])
 
     const doSearch = async (q: string) => {
         setLoading(true)
@@ -59,73 +68,80 @@ function SearchContent() {
         setLikedIds(new Set((data || []).map((l: any) => l.song_id)))
     }
 
+    useEffect(() => { if (user) { fetchPlaylists(); fetchLiked() } }, [user])
+
+    useEffect(() => {
+        if (debouncedQuery && user) {
+            doSearch(debouncedQuery)
+            // Save to recent searches
+            const updated = [debouncedQuery, ...recentSearches.filter(s => s !== debouncedQuery)].slice(0, 10)
+            setRecentSearches(updated)
+            saveRecentSearches(updated)
+        } else {
+            setResults([])
+        }
+    }, [debouncedQuery, user])
+
+    const clearRecentSearches = () => {
+        setRecentSearches([])
+        saveRecentSearches([])
+    }
+
+    const selectRecentSearch = (q: string) => {
+        setQuery(q)
+    }
+
     return (
-        <div className="search-page-wrapper" style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto', fontFamily: 'Geist, sans-serif' }}>
+        <div className="search-page-wrapper" style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto' }}>
             <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
-        
         .search-container {
           position: relative;
           max-width: 600px;
           margin-bottom: 40px;
         }
-
         .search-input {
-          width: 100%;
-          height: 54px;
+          width: 100%; height: 54px;
           background: rgba(255, 255, 255, 0.04);
           border: 1px solid rgba(255, 255, 255, 0.09);
           border-radius: 16px;
           padding: 0 50px 0 54px;
-          color: #f0f0f8;
-          font-size: 15px;
-          outline: none;
-          transition: all 0.2s ease;
-          backdrop-filter: blur(10px);
-          box-sizing: border-box;
+          color: #f0f0f8; font-size: 15px;
+          outline: none; transition: all 0.2s ease;
+          backdrop-filter: blur(10px); box-sizing: border-box;
+          font-family: 'DM Sans', sans-serif;
         }
-
         .search-input:focus {
           background: rgba(167, 139, 250, 0.05);
           border-color: rgba(167, 139, 250, 0.5);
           box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
         }
-
         .empty-state {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 80px 0;
-          color: rgba(160, 145, 200, 0.4);
-          text-align: center;
+          display: flex; flex-direction: column; align-items: center;
+          justify-content: center; padding: 80px 0;
+          color: rgba(160, 145, 200, 0.4); text-align: center;
         }
-
-        /* Responsive Breakpoints */
+        .recent-chip {
+          display: flex; align-items: center; gap: 8px;
+          padding: 8px 14px; border-radius: 10px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+          color: rgba(255,255,255,0.5); font-size: 13px;
+          cursor: pointer; transition: all 0.15s;
+          border: none;
+        }
+        .recent-chip:hover { background: rgba(255,255,255,0.06); color: #fff; }
         @media (max-width: 640px) {
-          .search-page-wrapper {
-            padding: 24px 16px !important;
-          }
-          .search-title {
-            font-size: 32px !important;
-          }
-          .search-container {
-            margin-bottom: 24px;
-          }
-          .search-input {
-            height: 48px;
-            font-size: 14px;
-            padding: 0 44px 0 48px;
-          }
-          .empty-state {
-            padding: 40px 0;
-          }
+          .search-page-wrapper { padding: 24px 16px !important; }
+          .search-title { font-size: 32px !important; }
+          .search-container { margin-bottom: 24px; }
+          .search-input { height: 48px; font-size: 14px; padding: 0 44px 0 48px; }
+          .empty-state { padding: 40px 0; }
         }
       `}</style>
 
             {/* Header */}
             <header style={{ marginBottom: 32 }}>
-                <h1 className="search-title" style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: 42, fontWeight: 400, color: '#f5f0ff', lineHeight: 1, marginBottom: 8 }}>
+                <h1 className="search-title" style={{ fontFamily: 'Syne, sans-serif', fontSize: 42, fontWeight: 700, color: '#f5f0ff', lineHeight: 1, marginBottom: 8 }}>
                     Search
                 </h1>
                 <p style={{ fontSize: 14, color: 'rgba(160,145,200,0.5)' }}>
@@ -152,10 +168,12 @@ function SearchContent() {
                     onBlur={() => setIsFocused(false)}
                     autoFocus
                     className="search-input"
+                    aria-label="Search songs"
                 />
                 {query && (
                     <button
                         onClick={() => { setQuery(''); setResults([]) }}
+                        aria-label="Clear search"
                         style={{
                             position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
                             background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '50%',
@@ -171,12 +189,35 @@ function SearchContent() {
             {/* Results Area */}
             <AnimatePresence mode="wait">
                 {!query ? (
-                    <motion.div key="empty" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="empty-state">
-                        <div style={{ padding: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.02)', marginBottom: 20 }}>
-                            <Search size={40} strokeWidth={1.5} />
+                    <motion.div key="empty" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        {/* Recent Searches */}
+                        {recentSearches.length > 0 && (
+                            <div style={{ marginBottom: 40 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                                    <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <Clock size={14} /> Recent Searches
+                                    </p>
+                                    <button onClick={clearRecentSearches} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <Trash2 size={12} /> Clear
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    {recentSearches.map(s => (
+                                        <button key={s} onClick={() => selectRecentSearch(s)} className="recent-chip">
+                                            <Search size={12} /> {s}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="empty-state">
+                            <div style={{ padding: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.02)', marginBottom: 20 }}>
+                                <Search size={40} strokeWidth={1.5} />
+                            </div>
+                            <h3 style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: 500 }}>Find your music</h3>
+                            <p style={{ fontSize: 14, marginTop: 4 }}>Search for tracks in your synced library</p>
                         </div>
-                        <h3 style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: 500 }}>Find your music</h3>
-                        <p style={{ fontSize: 14, marginTop: 4 }}>Search for tracks in your synced library</p>
                     </motion.div>
                 ) : loading ? (
                     <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -185,7 +226,7 @@ function SearchContent() {
                 ) : results.length === 0 ? (
                     <motion.div key="no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="empty-state">
                         <Music2 size={40} strokeWidth={1.5} style={{ marginBottom: 20 }} />
-                        <h3 style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: 500 }}>No results for "{query}"</h3>
+                        <h3 style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: 500 }}>No results for &ldquo;{query}&rdquo;</h3>
                         <p style={{ fontSize: 14, marginTop: 4 }}>Try a different title or keyword</p>
                     </motion.div>
                 ) : (

@@ -41,6 +41,13 @@ export default function AddSongModal({ onClose, onAdded }: AddSongModalProps) {
   const handleSave = async () => {
     if (!preview || !user) return
     setLoading(true)
+    // Check for duplicate
+    const { data: existing } = await supabase.from('songs').select('id').eq('user_id', user.id).eq('video_id', preview.videoId).limit(1)
+    if (existing && existing.length > 0) {
+      setError('This song is already in your library')
+      setLoading(false)
+      return
+    }
     const { error: err } = await supabase.from('songs').insert({
       title: preview.title, youtube_url: url,
       video_id: preview.videoId, thumbnail: preview.thumbnail, user_id: user.id,

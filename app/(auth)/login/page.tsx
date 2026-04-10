@@ -145,9 +145,14 @@ export default function LoginPage() {
                   <button type="submit" disabled={loading} className="submit-btn-s">{loading ? <Spinner /> : 'Sign In'}</button>
                 </form>
 
-                <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12.5, color: 'rgba(140,130,180,0.5)' }}>
-                  New to Wavify? <Link href="/signup" style={{ color: '#c4a7ff', textDecoration: 'none' }}>Create account</Link>
-                </p>
+                <div style={{ textAlign: 'center', marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <Link href="/reset-password" style={{ fontSize: 12.5, color: 'rgba(167,139,250,0.6)', textDecoration: 'none' }}>
+                    Forgot your password?
+                  </Link>
+                  <p style={{ fontSize: 12.5, color: 'rgba(140,130,180,0.5)' }}>
+                    New to Wavify? <Link href="/signup" style={{ color: '#c4a7ff', textDecoration: 'none' }}>Create account</Link>
+                  </p>
+                </div>
               </div>
             </div>
           </motion.div>

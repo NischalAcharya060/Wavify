@@ -20,8 +20,6 @@ export default function LikedSongsPage() {
     // --- Logic for Username Consistency ---
     const displayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
 
-    useEffect(() => { if (user) fetchAll() }, [user])
-
     const fetchAll = async () => {
         setLoading(true)
         const [{ data: liked }, { data: pls }] = await Promise.all([
@@ -33,6 +31,8 @@ export default function LikedSongsPage() {
         setPlaylists(pls || [])
         setLoading(false)
     }
+
+    useEffect(() => { if (user) fetchAll() }, [user])
 
     const shufflePlay = () => {
         if (!songs.length) return
@@ -138,11 +138,12 @@ export default function LikedSongsPage() {
                             whileTap={{ scale: 0.95 }}
                             onClick={() => playSong(songs[0], songs)}
                             className="play-btn-main"
+                            aria-label="Play all liked songs"
                         >
                             <Play size={28} fill="currentColor" />
                         </motion.button>
 
-                        <button onClick={shufflePlay} className="shuffle-btn">
+                        <button onClick={shufflePlay} className="shuffle-btn" aria-label="Shuffle play liked songs">
                             <Shuffle size={18} /> Shuffle
                         </button>
                     </div>

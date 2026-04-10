@@ -9,6 +9,7 @@ import SongCard from '@/components/SongCard'
 import PlaylistCard from '@/components/PlaylistCard'
 import AddSongModal from '@/components/AddSongModal'
 import { usePlayer } from '@/lib/PlayerContext'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import { Plus, Music2, Disc3, Clock, Heart, LayoutGrid, List, SortAsc, SortDesc, Sparkles } from 'lucide-react'
 
 type SortKey = 'created_at' | 'title'
@@ -40,6 +41,7 @@ export default function HomePage() {
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const supabase = createClient()
 
   const displayName = user?.user_metadata?.display_name
@@ -52,14 +54,6 @@ export default function HomePage() {
     if (h < 12) return 'Good morning'
     if (h < 17) return 'Good afternoon'
     return 'Good evening'
-  }
-
-  useEffect(() => { if (user) fetchAll() }, [user])
-
-  const fetchAll = async () => {
-    setLoading(true)
-    await Promise.all([fetchSongs(), fetchRecent(), fetchPlaylists(), fetchLiked()])
-    setLoading(false)
   }
 
   const fetchSongs = async () => {
@@ -105,6 +99,14 @@ export default function HomePage() {
     setLikedIds(new Set((data || []).map((l: any) => l.song_id)))
   }
 
+  const fetchAll = async () => {
+    setLoading(true)
+    await Promise.all([fetchSongs(), fetchRecent(), fetchPlaylists(), fetchLiked()])
+    setLoading(false)
+  }
+
+  useEffect(() => { if (user) fetchAll() }, [user])
+
   const sortedSongs = [...songs].sort((a, b) => {
     const v = sortKey === 'title'
       ? a.title.localeCompare(b.title)
@@ -113,6 +115,8 @@ export default function HomePage() {
   })
 
   const deleteSong = async (id: string) => {
+    setSongs(prev => prev.filter(s => s.id !== id))
+    setDeleteTarget(null)
     await supabase.from('songs').delete().eq('id', id)
     fetchAll()
   }
@@ -292,13 +296,13 @@ export default function HomePage() {
           ) : viewMode === 'grid' ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: 14 }}>
               {sortedSongs.map((song, i) => (
-                <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} view="grid" />
+                <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => setDeleteTarget(song.id)} playlists={playlists} index={i} view="grid" />
               ))}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {sortedSongs.map((song, i) => (
-                <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => deleteSong(song.id)} playlists={playlists} index={i} />
+                <SongCard key={song.id} song={song} queue={sortedSongs} isLiked={likedIds.has(song.id)} onLikeToggle={fetchLiked} showDelete onDelete={() => setDeleteTarget(song.id)} playlists={playlists} index={i} />
               ))}
             </div>
           )}
@@ -342,6 +346,16 @@ export default function HomePage() {
       <AnimatePresence>
         {showAddModal && <AddSongModal onClose={() => setShowAddModal(false)} onAdded={fetchAll} />}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteSong(deleteTarget)}
+        title="Delete Song"
+        description="This will permanently remove this song from your library and all playlists."
+        confirmLabel="Delete Song"
+        variant="danger"
+      />
     </div>
   )
 }

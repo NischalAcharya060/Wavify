@@ -104,7 +104,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             <div className="main-viewport">
                 <Navbar onMenuClick={() => setSidebarCollapsed(false)} />
-                <main className="content-scroll-area">
+                <main id="main-content" className="content-scroll-area">
                     {children}
                 </main>
                 <MusicPlayer isCollapsed={sidebarCollapsed} />
