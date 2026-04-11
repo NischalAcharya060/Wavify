@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
 import { Playlist } from '@/lib/types'
 import toast from 'react-hot-toast'
-import { Home, Search, Library, Heart, Plus, Music2, LogOut, ListMusic, ChevronLeft, Settings, ShieldCheck } from 'lucide-react'
+import { Home, Search, Library, Heart, Plus, Music2, LogOut, ListMusic, ChevronLeft, Settings, ShieldCheck, Sparkles } from 'lucide-react'
 
 interface SidebarProps {
     collapsed: boolean
@@ -47,6 +47,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         { href: '/search', label: 'Search', icon: Search },
         { href: '/library', label: 'Library', icon: Library },
         { href: '/liked', label: 'Liked Songs', icon: Heart },
+        { href: '/ai', label: 'AI Studio', icon: Sparkles },
         { href: '/add-song', label: 'Add Song', icon: Plus },
         { href: '/settings', label: 'Settings', icon: Settings },
     ]

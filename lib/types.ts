@@ -48,3 +48,25 @@ export interface User {
 
 export type NewSong = Omit<Song, 'id' | 'created_at'>
 export type NewPlaylist = Omit<Playlist, 'id' | 'created_at'>
+
+export interface SongAnalysis {
+  songId: string
+  mood: string
+  energy: number
+  genres: string[]
+  vibe: string
+}
+
+export interface AIRecommendation {
+  title: string
+  artist: string
+  searchQuery: string
+  reason: string
+}
+
+export interface GeneratedPlaylist {
+  playlistName: string
+  description: string
+  existingSongs: Array<{ songId: string; title: string }>
+  newSuggestions: Array<{ title: string; artist: string; searchQuery: string }>
+}
