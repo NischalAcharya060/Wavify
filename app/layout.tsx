@@ -3,6 +3,8 @@ import './globals.css'
 import { AuthProvider } from '@/lib/AuthContext'
 import { PlayerProvider } from '@/lib/PlayerContext'
 import { Toaster } from 'react-hot-toast'
+import PWA from '@/components/PWA'
+import MediaSession from '@/components/MediaSession'
 
 const siteUrl = 'https://wavify-grdhravan.vercel.app'
 
@@ -72,6 +74,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <head>
             <link rel="preconnect" href="https://fonts.googleapis.com" />
             <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+            <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+            <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+            <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+            <meta name="application-name" content="Wavify" />
+            <meta name="mobile-web-app-capable" content="yes" />
+            <meta name="apple-mobile-web-app-capable" content="yes" />
+            <meta name="apple-mobile-web-app-title" content="Wavify" />
+            <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+            <meta name="msapplication-TileColor" content="#08080f" />
+            <meta name="msapplication-tap-highlight" content="no" />
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
@@ -101,6 +114,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         }}>
         <AuthProvider>
             <PlayerProvider>
+                <MediaSession />
+                <PWA />
                 <Toaster
                     position="bottom-right"
                     toastOptions={{

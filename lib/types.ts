@@ -2,6 +2,7 @@ export interface Song {
   id: string
   title: string
   youtube_url: string
+  artist?: string
   video_id: string
   thumbnail: string | null
   user_id: string
