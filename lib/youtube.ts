@@ -14,6 +14,12 @@ export function extractYouTubeVideoId(url: string): string | null {
   return null;
 }
 
+export function extractYouTubePlaylistId(url: string): string | null {
+  if (!url) return null;
+  const match = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
 export function getYouTubeThumbnail(videoId: string): string {
   return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 }
