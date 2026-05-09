@@ -1,7 +1,7 @@
 {
-  "name": "Wavify — Stream Your World",
+  "name": "Wavify — Modern Music Streaming Platform",
   "short_name": "Wavify",
-  "description": "A modern personal music streaming app powered by YouTube. Sync your favorite tracks, create playlists, and enjoy seamless playback.",
+  "description": "Stream music with Wavify - a modern music streaming platform with YouTube integration. Create playlists, manage your library, and enjoy seamless music playback.",
   "id": "/home",
   "start_url": "/home",
   "scope": "/",
@@ -13,7 +13,11 @@
   "lang": "en",
   "dir": "ltr",
   "categories": ["music", "entertainment", "multimedia"],
-  "icons": [
+  "author": {
+    "name": "Nischal Acharya",
+    "url": "https://acharyanischal.com.np"
+  },
+  "screenshots": [
     {
       "src": "/icons/android/launchericon-48x48.png",
       "sizes": "48x48",
@@ -55,9 +59,7 @@
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
+    },
     {
       "src": "/icons/screenshots/Pc.png",
       "sizes": "1024x1024",
