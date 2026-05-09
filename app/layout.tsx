@@ -218,12 +218,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     }),
                 }}
             />
-                            price: '0',
-                            priceCurrency: 'USD',
-                        },
-                    }),
-                }}
-            />
         </head>
         <body suppressHydrationWarning style={{
             backgroundColor: '#08080f',
