@@ -8,6 +8,7 @@ A full-stack music streaming web app built with **Next.js 16 (App Router)**, **T
 
 - 🔐 **Auth** — Sign up, login, logout via Supabase Auth (email/password + Google OAuth)
 - 🎵 **YouTube Integration** — Paste a YouTube URL → auto-extracts title, thumbnail, video ID
+- 🎼 **Spotify Playlist Import** — Paste a public Spotify playlist URL and import matched tracks into your library
 - ▶️ **Music Player** — Fixed bottom player with progress bar, volume, skip, shuffle, repeat, sleep timer
 - ❤️ **Liked Songs** — Like/unlike songs, dedicated Liked Songs page
 - 📋 **Playlists** — Create playlists, add/remove songs
@@ -81,6 +82,8 @@ app/
     profile/page.tsx          # User profile & stats
     playlist/[id]/page.tsx    # Playlist detail
   api/
+    spotify/
+      playlist/route.ts       # Spotify playlist import endpoint
     ai/
       recommend/route.ts      # AI song recommendations endpoint
       generate-playlist/route.ts  # AI playlist generation endpoint
