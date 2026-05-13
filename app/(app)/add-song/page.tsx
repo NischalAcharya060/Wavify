@@ -10,6 +10,7 @@ import {
   getYouTubeThumbnail,
   fetchYouTubeTitle,
 } from '@/lib/youtube'
+import { extractSpotifyPlaylistId } from '@/lib/spotify'
 import toast from 'react-hot-toast'
 import {
   Link2, Loader2, CheckCircle2, Music2, ArrowRight, Play, ClipboardPaste,
@@ -23,6 +24,13 @@ interface PlaylistItem {
   title: string
   thumbnail: string
   author?: string
+}
+
+interface PlaylistFetchResponse {
+  title?: string
+  items?: PlaylistItem[]
+  unmatched?: number
+  error?: string
 }
 
 export default function AddSongPage() {
@@ -46,6 +54,7 @@ export default function AddSongPage() {
   const [importing, setImporting] = useState(false)
   const [importProgress, setImportProgress] = useState(0)
   const [createPlaylist, setCreatePlaylist] = useState(true)
+  const [existingPlaylistId, setExistingPlaylistId] = useState<string | null>(null)
   const [importDone, setImportDone] = useState<{ added: number; skipped: number } | null>(null)
 
   const { user } = useAuth()
@@ -106,36 +115,43 @@ export default function AddSongPage() {
       const text = await navigator.clipboard.readText()
       if (!text.trim()) { toast.error('Clipboard is empty'); return }
       if (which === 'track') { setUrl(text); setPreview(null); setError('') }
-      else { setPlaylistUrl(text); setPlItems([]); setSelected(new Set()); setPlError('') }
+      else { setPlaylistUrl(text); setPlItems([]); setSelected(new Set()); setPlError(''); setExistingPlaylistId(null); setCreatePlaylist(true) }
       toast.success('Pasted from clipboard')
     } catch { toast.error('Could not read clipboard') }
   }
 
   // ---------- Playlist flow ----------
   const handleFetchPlaylist = async () => {
-    setPlError(''); setPlItems([]); setSelected(new Set()); setExistingVideoIds(new Set()); setImportDone(null)
-    const playlistId = extractYouTubePlaylistId(playlistUrl.trim())
-    if (!playlistId) {
-      setPlError('Please enter a valid YouTube playlist URL (must contain ?list=...)')
+    setPlError(''); setPlItems([]); setSelected(new Set()); setExistingVideoIds(new Set()); setImportDone(null); setExistingPlaylistId(null); setCreatePlaylist(true)
+    const input = playlistUrl.trim()
+    const ytPlaylistId = extractYouTubePlaylistId(input)
+    const spotifyPlaylistId = extractSpotifyPlaylistId(input)
+
+    if (!ytPlaylistId && !spotifyPlaylistId) {
+      setPlError('Please enter a valid YouTube or Spotify playlist URL')
       toast.error('Invalid playlist URL')
       return
     }
+
+    const source: 'youtube' | 'spotify' = spotifyPlaylistId ? 'spotify' : 'youtube'
     setPlLoading(true)
-    const t = toast.loading('Loading playlist...')
+    const t = toast.loading(source === 'spotify' ? 'Loading Spotify playlist...' : 'Loading YouTube playlist...')
+
     try {
-      const res = await fetch('/api/youtube/playlist', {
+      const res = await fetch(source === 'spotify' ? '/api/spotify/playlist' : '/api/youtube/playlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playlistId }),
+        body: JSON.stringify({ playlistId: source === 'spotify' ? spotifyPlaylistId : ytPlaylistId }),
       })
-      const data = await res.json()
+      const data = (await res.json()) as PlaylistFetchResponse
       if (!res.ok) {
         setPlError(data.error || 'Failed to fetch playlist')
         toast.error(data.error || 'Failed to fetch playlist', { id: t })
         return
       }
       const items: PlaylistItem[] = data.items || []
-      setPlTitle(data.title || 'YouTube Playlist')
+      const playlistName = data.title || (source === 'spotify' ? 'Spotify Playlist' : 'YouTube Playlist')
+      setPlTitle(playlistName)
       setPlItems(items)
 
       let existing = new Set<string>()
@@ -150,13 +166,34 @@ export default function AddSongPage() {
       setExistingVideoIds(existing)
       setSelected(new Set(items.filter(i => !existing.has(i.videoId)).map(i => i.videoId)))
 
+      let existingPlaylist: string | null = null
+      if (user && playlistName) {
+        const { data: playlistRows } = await supabase
+          .from('playlists')
+          .select('id')
+          .eq('user_id', user.id)
+          .ilike('name', playlistName)
+          .limit(1)
+        existingPlaylist = playlistRows?.[0]?.id ?? null
+      }
+      setExistingPlaylistId(existingPlaylist)
+      setCreatePlaylist(!existingPlaylist)
+
       const newCount = items.length - existing.size
       if (items.length === 0) {
         toast.error('No tracks found in this playlist', { id: t })
       } else if (newCount === 0) {
         toast(`All ${items.length} tracks are already in your library`, { id: t, icon: 'ℹ️' })
       } else {
-        toast.success(`Loaded ${items.length} tracks · ${newCount} new`, { id: t })
+        const unmatchedInfo = source === 'spotify' && data.unmatched && data.unmatched > 0
+          ? ` · ${data.unmatched} unmatched`
+          : ''
+        const playlistInfo = existingPlaylist ? ' · existing playlist found' : ' · playlist will be created'
+        toast.success(`Loaded ${items.length} tracks · ${newCount} new${unmatchedInfo}${playlistInfo}`, { id: t })
+      }
+
+      if (existingPlaylist) {
+        toast('Playlist already exists. New playlist creation is disabled.', { icon: 'ℹ️' })
       }
     } catch {
       setPlError('Network error. Please try again.')
@@ -188,6 +225,7 @@ export default function AddSongPage() {
     const t = toast.loading(`Importing ${selected.size} song${selected.size === 1 ? '' : 's'}...`)
 
     const toImport = plItems.filter(i => selected.has(i.videoId))
+    const hadExistingPlaylist = Boolean(existingPlaylistId)
 
     // Find existing songs to avoid duplicates
     const { data: existingRows } = await supabase
@@ -230,19 +268,41 @@ export default function AddSongPage() {
     ]
 
     let playlistCreated = false
-    if (createPlaylist && allSongIds.length > 0) {
+    let playlistUpdated = false
+    let targetPlaylistId = existingPlaylistId
+
+    if (!targetPlaylistId && createPlaylist && allSongIds.length > 0) {
       const { data: pl, error: plErr } = await supabase
         .from('playlists')
-        .insert({ name: plTitle || 'YouTube Playlist', user_id: user.id })
+        .insert({ name: plTitle || 'Imported Playlist', user_id: user.id })
         .select('id')
         .single()
       if (!plErr && pl) {
-        const rows = allSongIds.map(song_id => ({ playlist_id: pl.id, song_id }))
-        const { error: linkErr } = await supabase.from('playlist_songs').insert(rows)
-        if (linkErr) toast.error('Songs saved, but linking to playlist failed')
-        else playlistCreated = true
+        targetPlaylistId = pl.id
+        playlistCreated = true
       } else {
         toast.error('Songs saved, but could not create playlist')
+      }
+    }
+
+    if (targetPlaylistId && allSongIds.length > 0) {
+      const { data: linkedRows } = await supabase
+        .from('playlist_songs')
+        .select('song_id')
+        .eq('playlist_id', targetPlaylistId)
+        .in('song_id', allSongIds)
+
+      const linkedSongIds = new Set((linkedRows || []).map(row => row.song_id))
+      const rows = allSongIds
+        .filter(songId => !linkedSongIds.has(songId))
+        .map(song_id => ({ playlist_id: targetPlaylistId, song_id }))
+
+      if (rows.length > 0) {
+        const { error: linkErr } = await supabase.from('playlist_songs').insert(rows)
+        if (linkErr) toast.error('Songs saved, but linking to playlist failed')
+        else playlistUpdated = true
+      } else {
+        playlistUpdated = true
       }
     }
 
@@ -254,15 +314,23 @@ export default function AddSongPage() {
     if (insertedSongs.length > 0) parts.push(`${insertedSongs.length} added`)
     if (existingMap.size > 0) parts.push(`${existingMap.size} skipped`)
     const summary = parts.length > 0 ? parts.join(' · ') : 'Nothing to import'
-    if (insertedSongs.length === 0 && existingMap.size > 0) {
+    const playlistSuffix = playlistCreated
+      ? ' · Playlist created'
+      : playlistUpdated && hadExistingPlaylist
+        ? ' · Added to existing playlist'
+        : playlistUpdated
+          ? ' · Playlist updated'
+          : ''
+
+    if (insertedSongs.length === 0 && existingMap.size > 0 && !playlistCreated && !playlistUpdated) {
       toast(`All ${existingMap.size} songs were already in your library`, { id: t, icon: 'ℹ️' })
     } else {
-      toast.success(playlistCreated ? `${summary} · Playlist created` : summary, { id: t })
+      toast.success(`${summary}${playlistSuffix}`, { id: t })
     }
   }
 
   const resetPlaylist = () => {
-    setPlaylistUrl(''); setPlItems([]); setSelected(new Set()); setExistingVideoIds(new Set()); setPlError(''); setImportDone(null); setPlTitle('')
+    setPlaylistUrl(''); setPlItems([]); setSelected(new Set()); setExistingVideoIds(new Set()); setPlError(''); setImportDone(null); setPlTitle(''); setCreatePlaylist(true); setExistingPlaylistId(null)
   }
 
   return (
@@ -469,7 +537,7 @@ export default function AddSongPage() {
           </h1>
         </div>
         <p className="header-subtext" style={{ fontSize: 14, color: 'rgba(160,145,200,0.5)', marginLeft: 52 }}>
-          Sync a single track or import an entire playlist from YouTube
+          Sync a single track from YouTube or import a full playlist from YouTube or Spotify
         </p>
       </header>
 
@@ -608,9 +676,9 @@ export default function AddSongPage() {
                       <ListMusic size={18} style={{ position: 'absolute', left: 16, color: 'rgba(160,145,200,0.4)' }} />
                       <input
                         type="text"
-                        placeholder="Paste YouTube playlist link..."
+                        placeholder="Paste YouTube or Spotify playlist link..."
                         value={playlistUrl}
-                        onChange={e => { setPlaylistUrl(e.target.value); setPlItems([]); setSelected(new Set()); setPlError('') }}
+                        onChange={e => { setPlaylistUrl(e.target.value); setPlItems([]); setSelected(new Set()); setPlError(''); setExistingPlaylistId(null); setCreatePlaylist(true) }}
                         onKeyDown={e => e.key === 'Enter' && handleFetchPlaylist()}
                         className="url-field"
                       />
@@ -635,6 +703,9 @@ export default function AddSongPage() {
                   <div className="tag-cloud" style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.03)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
                       youtube.com/playlist?list=...
+                    </span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.03)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      open.spotify.com/playlist/...
                     </span>
                   </div>
                 </div>
@@ -708,14 +779,16 @@ export default function AddSongPage() {
                       </div>
 
                       <div className="toolbar">
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.8)', fontSize: 13, cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.8)', fontSize: 13, cursor: 'default' }}>
                           <input
                             type="checkbox"
                             checked={createPlaylist}
-                            onChange={e => setCreatePlaylist(e.target.checked)}
+                            disabled
                             style={{ accentColor: '#7c3aed' }}
                           />
-                          Also create a playlist named &ldquo;{plTitle}&rdquo;
+                          {existingPlaylistId
+                            ? `Playlist "${plTitle}" already exists (new creation disabled)`
+                            : `Playlist "${plTitle}" will be created automatically`}
                         </label>
 
                         <button
