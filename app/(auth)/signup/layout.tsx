@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-    title: 'Sign Up | Wavify',
+    title: 'Sign Up',
     description: 'Create a free Wavify account today. Sync your favorite YouTube music, build custom playlists, and stream anywhere with our modern music streaming platform.',
     robots: {
         index: true,

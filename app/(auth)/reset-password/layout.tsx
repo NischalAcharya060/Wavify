@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-    title: 'Reset Password | Wavify',
+    title: 'Reset Password',
     description: 'Reset your Wavify account password. Enter your email address to receive a secure password reset link.',
     robots: {
         index: false,
