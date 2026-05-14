@@ -298,7 +298,7 @@ export default function SettingsPage() {
               If the default AI key fails, use your own Gemini key. It stays only in this browser.
             </p>
             <div className="privacy-note">
-              We do not save your Gemini API key on our server. Your key is stored only in this browser&apos;s localStorage, and we have no way to see your personal API key.
+              We do not save your Gemini API key on our server. Your key is stored only in your browser&apos;s localStorage, and we have no way to see your personal API key.
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
               <input

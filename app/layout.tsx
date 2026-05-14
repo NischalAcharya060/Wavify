@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/lib/AuthContext'
 import { PlayerProvider } from '@/lib/PlayerContext'
-import { Toaster } from 'react-hot-toast'
+import Toaster from '@/components/Toaster'
 import PWA from '@/components/PWA'
 import MediaSession from '@/components/MediaSession'
 
@@ -230,19 +230,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <PlayerProvider>
                 <MediaSession />
                 <PWA />
-                <Toaster
-                    position="bottom-right"
-                    toastOptions={{
-                        style: {
-                            background: '#1e1b4b',
-                            color: '#fff',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            fontSize: '14px',
-                            borderRadius: '12px',
-                        },
-                        duration: 3000,
-                    }}
-                />
+                <Toaster />
                 {children}
             </PlayerProvider>
         </AuthProvider>

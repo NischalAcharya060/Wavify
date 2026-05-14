@@ -7,7 +7,6 @@ import { useAuth } from '@/lib/AuthContext'
 import Sidebar from '@/components/Sidebar'
 import Navbar from '@/components/Navbar'
 import MusicPlayer from '@/components/MusicPlayer'
-import { Toaster } from 'react-hot-toast'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth()
@@ -110,7 +109,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <MusicPlayer isCollapsed={sidebarCollapsed} />
             </div>
 
-            <Toaster position="bottom-right" />
-        </div>
+            </div>
     )
 }

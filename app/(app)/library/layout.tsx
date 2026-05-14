@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-    title: 'My Library | Wavify',
+    title: 'My Library',
     description: 'Access your music library, playlists, and recently played songs. Manage your collection in Wavify.',
     robots: {
         index: false,
