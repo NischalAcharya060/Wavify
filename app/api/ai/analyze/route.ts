@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { songIds } = await request.json() as { songIds: string[] }
+  const customApiKey = request.headers.get('x-gemini-api-key')?.trim()
   if (!songIds?.length || songIds.length > 20) {
     return NextResponse.json({ error: 'Provide 1-20 song IDs' }, { status: 400 })
   }
@@ -48,7 +49,7 @@ ${songList}
 Return ONLY a valid JSON array with objects containing: songId, mood, energy, genres, vibe.`
 
   try {
-    const model = getModel()
+    const model = getModel('gemini-2.5-flash', customApiKey)
     const result = await model.generateContent(prompt)
     recordRequest(user.id)
     const text = result.response.text()
@@ -56,9 +57,13 @@ Return ONLY a valid JSON array with objects containing: songId, mood, energy, ge
     return NextResponse.json({ results: analyses })
   } catch (error: unknown) {
     console.error('AI analyze error:', error)
-    const msg = error instanceof Error && error.message.includes('429')
+    const isQuotaError = error instanceof Error && error.message.includes('429')
+    const isApiKeyError = error instanceof Error && /api key|apikey|credential|permission/i.test(error.message)
+    const msg = isQuotaError
       ? 'Gemini API quota exceeded. Please wait or check your API key billing at ai.google.dev'
-      : 'AI processing failed. Please try again.'
+      : isApiKeyError
+        ? 'Gemini API key is invalid or restricted. Update your key in Settings → Gemini API Key.'
+        : 'AI processing failed. If the default key is unavailable, add your own key in Settings → Gemini API Key.'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

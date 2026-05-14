@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { prompt } = await request.json() as { prompt: string }
+  const customApiKey = request.headers.get('x-gemini-api-key')?.trim()
   if (!prompt?.trim()) {
     return NextResponse.json({ error: 'Provide a playlist prompt' }, { status: 400 })
   }
@@ -55,7 +56,7 @@ Return ONLY valid JSON with this structure:
 }`
 
   try {
-    const model = getModel()
+    const model = getModel('gemini-2.5-flash', customApiKey)
     const result = await model.generateContent(aiPrompt)
     recordRequest(user.id)
     const text = result.response.text()
@@ -63,9 +64,13 @@ Return ONLY valid JSON with this structure:
     return NextResponse.json(playlist)
   } catch (error: unknown) {
     console.error('AI generate-playlist error:', error)
-    const msg = error instanceof Error && error.message.includes('429')
+    const isQuotaError = error instanceof Error && error.message.includes('429')
+    const isApiKeyError = error instanceof Error && /api key|apikey|credential|permission/i.test(error.message)
+    const msg = isQuotaError
       ? 'Gemini API quota exceeded. Please wait or check your API key billing at ai.google.dev'
-      : 'AI processing failed. Please try again.'
+      : isApiKeyError
+        ? 'Gemini API key is invalid or restricted. Update your key in Settings → Gemini API Key.'
+        : 'AI processing failed. If the default key is unavailable, add your own key in Settings → Gemini API Key.'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

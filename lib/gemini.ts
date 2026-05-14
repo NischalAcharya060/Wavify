@@ -1,18 +1,26 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-let genAI: GoogleGenerativeAI | null = null
+let defaultGenAI: GoogleGenerativeAI | null = null
 
-function getGeminiClient(): GoogleGenerativeAI {
-  if (!genAI) {
+function getDefaultGeminiClient(): GoogleGenerativeAI {
+  if (!defaultGenAI) {
     const key = process.env.GOOGLE_GEMINI_API_KEY
     if (!key) throw new Error('GOOGLE_GEMINI_API_KEY is not set')
-    genAI = new GoogleGenerativeAI(key)
+    defaultGenAI = new GoogleGenerativeAI(key)
   }
-  return genAI
+  return defaultGenAI
 }
 
-export function getModel(modelName = 'gemini-2.5-flash') {
-  return getGeminiClient().getGenerativeModel({ model: modelName })
+function getGeminiClient(apiKey?: string): GoogleGenerativeAI {
+  const customKey = apiKey?.trim()
+  if (customKey) {
+    return new GoogleGenerativeAI(customKey)
+  }
+  return getDefaultGeminiClient()
+}
+
+export function getModel(modelName = 'gemini-2.5-flash', apiKey?: string) {
+  return getGeminiClient(apiKey).getGenerativeModel({ model: modelName })
 }
 
 export function parseGeminiJSON<T>(text: string): T {

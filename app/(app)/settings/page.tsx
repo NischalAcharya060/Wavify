@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/components/ConfirmDialog'
-import { Settings, Keyboard, Trash2, Clock, User, ChevronRight, Volume2, Search } from 'lucide-react'
+import { Settings, Keyboard, Trash2, Clock, User, ChevronRight, Search, KeyRound } from 'lucide-react'
 
 const shortcuts = [
   { keys: 'Space', action: 'Play / Pause' },
@@ -21,6 +21,9 @@ const shortcuts = [
   { keys: 'N', action: 'Next track' },
   { keys: 'P', action: 'Previous track' },
 ]
+const GEMINI_KEY_STORAGE = 'wavify_gemini_api_key'
+const RECENT_SEARCHES_KEY = 'wavify_recent_searches'
+const RECENT_SEARCHES_UPDATED_EVENT = 'wavify:recent-searches-updated'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -28,20 +31,67 @@ export default function SettingsPage() {
   const [confirmClearRecent, setConfirmClearRecent] = useState(false)
   const [confirmClearSearch, setConfirmClearSearch] = useState(false)
   const [clearing, setClearing] = useState(false)
+  const [geminiApiKey, setGeminiApiKey] = useState('')
+  const [geminiKeySaved, setGeminiKeySaved] = useState(false)
+
+  useEffect(() => {
+    try {
+      const savedKey = localStorage.getItem(GEMINI_KEY_STORAGE)?.trim() || ''
+      if (savedKey) {
+        setGeminiApiKey(savedKey)
+        setGeminiKeySaved(true)
+      }
+    } catch {}
+  }, [])
 
   const clearRecentlyPlayed = async () => {
-    if (!user) return
+    if (!user) {
+      toast.error('You must be logged in to clear recently played')
+      return
+    }
     setClearing(true)
-    await supabase.from('recently_played').delete().eq('user_id', user.id)
-    toast.success('Recently played cleared')
-    setConfirmClearRecent(false)
-    setClearing(false)
+    try {
+      const { error } = await supabase.from('recently_played').delete().eq('user_id', user.id)
+      if (error) throw error
+      toast.success('Recently played cleared')
+      setConfirmClearRecent(false)
+    } catch (error) {
+      console.error('Clear recently played error:', error)
+      toast.error('Failed to clear recently played')
+    } finally {
+      setClearing(false)
+    }
   }
 
   const clearSearchHistory = () => {
-    localStorage.removeItem('wavify_recent_searches')
-    toast.success('Search history cleared')
-    setConfirmClearSearch(false)
+    try {
+      localStorage.removeItem(RECENT_SEARCHES_KEY)
+      window.dispatchEvent(new Event(RECENT_SEARCHES_UPDATED_EVENT))
+      toast.success('Search history cleared')
+      setConfirmClearSearch(false)
+    } catch (error) {
+      console.error('Clear search history error:', error)
+      toast.error('Failed to clear search history')
+    }
+  }
+
+  const saveGeminiApiKey = () => {
+    const key = geminiApiKey.trim()
+    if (!key) {
+      toast.error('Enter your Gemini API key first')
+      return
+    }
+    localStorage.setItem(GEMINI_KEY_STORAGE, key)
+    setGeminiApiKey(key)
+    setGeminiKeySaved(true)
+    toast.success('Gemini API key saved for this browser')
+  }
+
+  const removeGeminiApiKey = () => {
+    localStorage.removeItem(GEMINI_KEY_STORAGE)
+    setGeminiApiKey('')
+    setGeminiKeySaved(false)
+    toast.success('Custom Gemini API key removed')
   }
 
   return (
@@ -126,6 +176,55 @@ export default function SettingsPage() {
         .btn-setting.danger:hover {
           background: rgba(251,113,133,0.08);
         }
+        .setting-input {
+          width: 100%;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.12);
+          color: #fff;
+          border-radius: 10px;
+          padding: 10px 12px;
+          font-size: 13px;
+          outline: none;
+        }
+        .setting-input:focus {
+          border-color: rgba(167,139,250,0.55);
+          box-shadow: 0 0 0 3px rgba(167,139,250,0.15);
+        }
+        .privacy-note {
+          margin-top: 12px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          border: 1px solid rgba(52,211,153,0.24);
+          background: rgba(52,211,153,0.08);
+          font-size: 12px;
+          color: rgba(220,252,231,0.9);
+          line-height: 1.5;
+        }
+        .tutorial-steps {
+          margin-top: 10px;
+          padding-left: 16px;
+          border-left: 1px solid rgba(167,139,250,0.3);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .tutorial-step {
+          position: relative;
+          font-size: 12px;
+          color: rgba(255,255,255,0.45);
+          line-height: 1.5;
+        }
+        .tutorial-step::before {
+          content: '';
+          position: absolute;
+          left: -21px;
+          top: 6px;
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          background: #a78bfa;
+          box-shadow: 0 0 0 3px rgba(167,139,250,0.15);
+        }
         @media (max-width: 640px) {
           .shortcut-grid { grid-template-columns: 1fr; }
           .setting-title { font-size: 36px !important; }
@@ -184,6 +283,62 @@ export default function SettingsPage() {
               <span className="shortcut-key">{s.keys}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Gemini API Key */}
+      <div className="setting-card">
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div className="setting-icon" style={{ background: 'rgba(124,58,237,0.14)' }}>
+            <KeyRound size={18} color="#a78bfa" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 700, color: '#fff', fontSize: 15 }}>Gemini API Key</p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+              If the default AI key fails, use your own Gemini key. It stays only in this browser.
+            </p>
+            <div className="privacy-note">
+              We do not save your Gemini API key on our server. Your key is stored only in this browser&apos;s localStorage, and we have no way to see your personal API key.
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              <input
+                type="password"
+                className="setting-input"
+                placeholder="Paste your Gemini API key (AIza...)"
+                value={geminiApiKey}
+                onChange={e => setGeminiApiKey(e.target.value)}
+                style={{ flex: 1, minWidth: 260 }}
+              />
+              <button onClick={saveGeminiApiKey} className="btn-setting">
+                Save Key
+              </button>
+              {geminiKeySaved && (
+                <button onClick={removeGeminiApiKey} className="btn-setting danger">
+                  Remove
+                </button>
+              )}
+            </div>
+            <div style={{ marginTop: 12, fontSize: 12, color: 'rgba(255,255,255,0.42)', lineHeight: 1.5 }}>
+              <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.66)', marginBottom: 8 }}>Free API key tutorial</p>
+              <div className="tutorial-steps">
+                <div className="tutorial-step">
+                  <strong style={{ color: '#fff' }}>Step 1:</strong> Open{' '}
+                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{ color: '#c4b5fd' }}>
+                    Google AI Studio API Keys
+                  </a>
+                </div>
+                <div className="tutorial-step">
+                  <strong style={{ color: '#fff' }}>Step 2:</strong> Sign in with your Google account
+                </div>
+                <div className="tutorial-step">
+                  <strong style={{ color: '#fff' }}>Step 3:</strong> Click <strong style={{ color: '#fff' }}>Create API key</strong>
+                </div>
+                <div className="tutorial-step">
+                  <strong style={{ color: '#fff' }}>Step 4:</strong> Copy the key and paste it above, then click Save Key
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

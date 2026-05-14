@@ -36,7 +36,7 @@ npm install
 1. Go to [supabase.com](https://supabase.com) and create a new project
 2. Go to **SQL Editor** and run the contents of `supabase-schema.sql`
 
-### 3. Get a Google Gemini API Key
+### 3. Get a Google Gemini API Key (Default App Key)
 1. Go to [Google AI Studio](https://aistudio.google.com)
 2. Create an API key
 3. Free tier includes: 10 requests/min, 250 requests/day for Gemini 2.5 Flash
@@ -61,6 +61,19 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
+
+### 6. Optional: Users can bring their own Gemini key
+If the default server key is unavailable or rate-limited, users can add a personal key:
+
+1. Go to **Settings → Gemini API Key**
+2. Paste their API key and save it (stored only in that browser)
+3. AI Studio requests will automatically use that key
+
+**Free key tutorial for users:**
+1. Open [Google AI Studio API Keys](https://aistudio.google.com/apikey)
+2. Sign in with Google
+3. Click **Create API key**
+4. Copy the key and paste it into Wavify settings
 
 ---
 
@@ -129,14 +142,15 @@ All tables have **Row Level Security** enabled so users only see their own data.
 
 ## 🤖 AI Architecture
 
-All AI features use server-side API routes (`app/api/ai/`) to keep the Gemini API key secure. The flow:
+All AI features use server-side API routes (`app/api/ai/`) to keep Gemini requests server-controlled. The flow:
 
 1. Client sends request to `/api/ai/*`
-2. Route authenticates user via Supabase session cookies
-3. Rate limiter checks per-user limits (8/min, 200/day)
-4. User's song data is fetched from Supabase and sent as context to Gemini
-5. Gemini 2.5 Flash responds with structured JSON
-6. Response is parsed and returned to the client
+2. Optional: client includes a user-provided Gemini API key from Settings
+3. Route authenticates user via Supabase session cookies
+4. Rate limiter checks per-user limits (8/min, 200/day)
+5. User's song data is fetched from Supabase and sent as context to Gemini
+6. Gemini 2.5 Flash responds with structured JSON
+7. Response is parsed and returned to the client
 
 **Rate Limits (Gemini 2.5 Flash Free Tier):**
 | Limit | Gemini Limit | App Limit (safety margin) |

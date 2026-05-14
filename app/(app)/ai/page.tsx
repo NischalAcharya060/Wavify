@@ -4,11 +4,13 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
-import { Song, SongAnalysis, AIRecommendation, GeneratedPlaylist } from '@/lib/types'
+import { SongAnalysis, AIRecommendation, GeneratedPlaylist } from '@/lib/types'
 import toast from 'react-hot-toast'
-import { Sparkles, Brain, ListMusic, Loader2, Music2, Plus, ExternalLink, Zap, Tag, RefreshCw } from 'lucide-react'
+import { Sparkles, Brain, ListMusic, Loader2, Music2, Plus, ExternalLink, Zap, Tag } from 'lucide-react'
+import Link from 'next/link'
 
 type ActiveTab = 'recommend' | 'playlist' | 'analyze'
+const GEMINI_KEY_STORAGE = 'wavify_gemini_api_key'
 
 export default function AIStudioPage() {
   const { user } = useAuth()
@@ -31,10 +33,28 @@ export default function AIStudioPage() {
   const [analyses, setAnalyses] = useState<SongAnalysis[]>([])
   const [anaError, setAnaError] = useState('')
 
+  const getGeminiApiKey = () => {
+    if (typeof window === 'undefined') return ''
+    try {
+      return localStorage.getItem(GEMINI_KEY_STORAGE)?.trim() || ''
+    } catch {
+      return ''
+    }
+  }
+
+  const buildAIHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    const customApiKey = getGeminiApiKey()
+    if (customApiKey) {
+      headers['x-gemini-api-key'] = customApiKey
+    }
+    return headers
+  }
+
   const fetchRecommendations = async () => {
     setLoading(true); setRecError(''); setRecommendations([])
     try {
-      const res = await fetch('/api/ai/recommend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 8 }) })
+      const res = await fetch('/api/ai/recommend', { method: 'POST', headers: buildAIHeaders(), body: JSON.stringify({ limit: 8 }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
       setRecommendations(data.recommendations || [])
@@ -49,7 +69,7 @@ export default function AIStudioPage() {
     if (!playlistPrompt.trim()) return
     setLoading(true); setPlError(''); setGeneratedPlaylist(null)
     try {
-      const res = await fetch('/api/ai/generate-playlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: playlistPrompt }) })
+      const res = await fetch('/api/ai/generate-playlist', { method: 'POST', headers: buildAIHeaders(), body: JSON.stringify({ prompt: playlistPrompt }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
       setGeneratedPlaylist(data)
@@ -84,7 +104,7 @@ export default function AIStudioPage() {
     try {
       const { data: songs } = await supabase.from('songs').select('id').eq('user_id', user!.id).limit(20)
       if (!songs?.length) { setAnaError('Add some songs to your library first'); setLoading(false); return }
-      const res = await fetch('/api/ai/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ songIds: songs.map(s => s.id) }) })
+      const res = await fetch('/api/ai/analyze', { method: 'POST', headers: buildAIHeaders(), body: JSON.stringify({ songIds: songs.map(s => s.id) }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
       setAnalyses(data.results || [])
@@ -232,6 +252,25 @@ export default function AIStudioPage() {
         <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 14, marginLeft: 52 }}>
           Discover music, generate playlists, and analyze vibes — powered by AI
         </p>
+        <div
+          style={{
+            marginLeft: 52,
+            marginTop: 10,
+            borderRadius: 12,
+            border: '1px solid rgba(167,139,250,0.24)',
+            background: 'rgba(167,139,250,0.08)',
+            padding: '10px 12px',
+            fontSize: 12,
+            color: 'rgba(228,220,255,0.92)',
+            maxWidth: 720,
+            lineHeight: 1.45,
+          }}
+        >
+          If AI fails because the default Gemini key is unavailable, add your own free key in{' '}
+          <Link href="/settings" style={{ color: '#d8b4fe', textDecoration: 'underline' }}>
+            Settings → Gemini API Key
+          </Link>.
+        </div>
       </div>
 
       {/* Tabs */}

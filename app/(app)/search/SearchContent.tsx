@@ -10,6 +10,9 @@ import SongCard from '@/components/SongCard'
 import { useDebounce } from '@/lib/useDebounce'
 import { Search, Music2, X, SearchIcon, Clock, Trash2 } from 'lucide-react'
 
+const RECENT_SEARCHES_KEY = 'wavify_recent_searches'
+const RECENT_SEARCHES_UPDATED_EVENT = 'wavify:recent-searches-updated'
+
 function SkeletonRow() {
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, marginBottom: 8 }}>
@@ -24,13 +27,16 @@ function SkeletonRow() {
 
 function loadRecentSearches(): string[] {
     try {
-        const data = localStorage.getItem('wavify_recent_searches')
+        const data = localStorage.getItem(RECENT_SEARCHES_KEY)
         return data ? JSON.parse(data) : []
     } catch { return [] }
 }
 
 function saveRecentSearches(searches: string[]) {
-    try { localStorage.setItem('wavify_recent_searches', JSON.stringify(searches.slice(0, 10))) } catch {}
+    try {
+        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches.slice(0, 10)))
+        window.dispatchEvent(new Event(RECENT_SEARCHES_UPDATED_EVENT))
+    } catch {}
 }
 
 function SearchContent() {
@@ -47,7 +53,21 @@ function SearchContent() {
     const supabase = createClient()
 
     useEffect(() => {
-        setRecentSearches(loadRecentSearches())
+        const syncRecentSearches = () => setRecentSearches(loadRecentSearches())
+        const onStorage = (event: StorageEvent) => {
+            if (event.key === null || event.key === RECENT_SEARCHES_KEY) {
+                syncRecentSearches()
+            }
+        }
+
+        syncRecentSearches()
+        window.addEventListener('storage', onStorage)
+        window.addEventListener(RECENT_SEARCHES_UPDATED_EVENT, syncRecentSearches)
+
+        return () => {
+            window.removeEventListener('storage', onStorage)
+            window.removeEventListener(RECENT_SEARCHES_UPDATED_EVENT, syncRecentSearches)
+        }
     }, [])
 
     const doSearch = async (q: string) => {
@@ -71,12 +91,14 @@ function SearchContent() {
     useEffect(() => { if (user) { fetchPlaylists(); fetchLiked() } }, [user])
 
     useEffect(() => {
-        if (debouncedQuery && user) {
-            doSearch(debouncedQuery)
-            // Save to recent searches
-            const updated = [debouncedQuery, ...recentSearches.filter(s => s !== debouncedQuery)].slice(0, 10)
-            setRecentSearches(updated)
-            saveRecentSearches(updated)
+        const normalizedQuery = debouncedQuery.trim()
+        if (normalizedQuery && user) {
+            doSearch(normalizedQuery)
+            setRecentSearches(prev => {
+                const updated = [normalizedQuery, ...prev.filter(s => s !== normalizedQuery)].slice(0, 10)
+                saveRecentSearches(updated)
+                return updated
+            })
         } else {
             setResults([])
         }
@@ -186,31 +208,30 @@ function SearchContent() {
                 )}
             </div>
 
+            {recentSearches.length > 0 && (
+                <div style={{ marginBottom: 28 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Clock size={14} /> Recent Searches
+                        </p>
+                        <button onClick={clearRecentSearches} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Trash2 size={12} /> Clear
+                        </button>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {recentSearches.map(s => (
+                            <button key={s} onClick={() => selectRecentSearch(s)} className="recent-chip">
+                                <Search size={12} /> {s}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Results Area */}
             <AnimatePresence mode="wait">
                 {!query ? (
                     <motion.div key="empty" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                        {/* Recent Searches */}
-                        {recentSearches.length > 0 && (
-                            <div style={{ marginBottom: 40 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                                    <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <Clock size={14} /> Recent Searches
-                                    </p>
-                                    <button onClick={clearRecentSearches} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                        <Trash2 size={12} /> Clear
-                                    </button>
-                                </div>
-                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                    {recentSearches.map(s => (
-                                        <button key={s} onClick={() => selectRecentSearch(s)} className="recent-chip">
-                                            <Search size={12} /> {s}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
                         <div className="empty-state">
                             <div style={{ padding: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.02)', marginBottom: 20 }}>
                                 <Search size={40} strokeWidth={1.5} />
