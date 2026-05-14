@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-    title: 'Settings | Wavify',
+    title: 'Settings',
     description: 'Configure your Wavify music player settings and preferences.',
     robots: {
         index: false,
