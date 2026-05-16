@@ -1,3 +1,7 @@
+// Simple in-memory cache for YouTube metadata
+const metadataCache = new Map<string, { data: { title: string; author: string }; timestamp: number }>()
+const CACHE_TTL = 1000 * 60 * 60 // 1 hour
+
 export function extractYouTubeVideoId(url: string): string | null {
   if (!url) return null;
 
@@ -25,6 +29,12 @@ export function getYouTubeThumbnail(videoId: string): string {
 }
 
 export async function fetchYouTubeMetadata(videoId: string): Promise<{ title: string; author: string }> {
+  // Check cache first
+  const cached = metadataCache.get(videoId)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data
+  }
+
   try {
     const url = encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`);
     const res = await fetch(`https://www.youtube.com/oembed?url=${url}&format=json`);
@@ -32,10 +42,15 @@ export async function fetchYouTubeMetadata(videoId: string): Promise<{ title: st
     if (!res.ok) throw new Error('Failed');
 
     const data = await res.json();
-    return {
+    const result = {
       title: data.title || 'Unknown Title',
       author: data.author_name || 'Unknown Artist'
     };
+
+    // Cache the result
+    metadataCache.set(videoId, { data: result, timestamp: Date.now() });
+
+    return result;
   } catch {
     return { title: 'Unknown Title', author: 'Unknown Artist' };
   }
@@ -48,13 +63,43 @@ export async function fetchYouTubeTitle(videoId: string): Promise<string> {
 
 export function formatDuration(seconds: number): string {
   if (!seconds || isNaN(seconds)) return '0:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
 
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
+export function parseYouTubeDuration(duration: string): number {
+  if (!duration) return 0;
 
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return 0;
+
+  const hours = parseInt(match[1] || '0', 10);
+  const minutes = parseInt(match[2] || '0', 10);
+  const seconds = parseInt(match[3] || '0', 10);
+
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+export function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  return `${m}:${String(s).padStart(2, '0')}`;
+  return shuffled;
+}
+
+export function getVideoIdFromPlaylistUrl(url: string): string | null {
+  const patterns = [
+    /[?&]v=([^"&?\/\s]{11})/,
+    /(?:embed\/|v\/|shorts\/|watch\?v=)([^"&?\/\s]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) return match[1];
+  }
+  return null;
 }

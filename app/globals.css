@@ -32,8 +32,16 @@ body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 h1,h2,h3,h4,h5 { font-family: 'Syne', sans-serif; letter-spacing: -0.02em; }
+
+/* Performance: GPU acceleration for animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
 
 /* ── Focus styles (a11y) ── */
 *:focus-visible {

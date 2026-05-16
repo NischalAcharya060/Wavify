@@ -3,10 +3,24 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import dynamic from 'next/dynamic'
 import { useAuth } from '@/lib/AuthContext'
 import Sidebar from '@/components/Sidebar'
 import Navbar from '@/components/Navbar'
-import MusicPlayer from '@/components/MusicPlayer'
+
+// Dynamic import for better performance - loads player only when needed
+const MusicPlayer = dynamic(() => import('@/components/MusicPlayer'), {
+  ssr: false,
+  loading: () => (
+    <div style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0, height: 90,
+      background: 'rgba(12,10,22,0.98)', borderTop: '1px solid rgba(139,92,246,0.1)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50
+    }}>
+      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>Loading player...</span>
+    </div>
+  ),
+})
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth()
