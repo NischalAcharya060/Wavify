@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
-import { Song, Playlist } from '@/lib/types'
+import { Song, Playlist, LikedSong } from '@/lib/types'
 import SongCard from '@/components/SongCard'
 import { usePlayer } from '@/lib/PlayerContext'
-import { Heart, Play, Shuffle, ShieldCheck } from 'lucide-react'
+import { Heart, Play, Shuffle } from 'lucide-react'
 
 export default function LikedSongsPage() {
     const { user } = useAuth()
@@ -20,19 +20,21 @@ export default function LikedSongsPage() {
     // --- Logic for Username Consistency ---
     const displayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
 
-    const fetchAll = async () => {
+    const fetchAll = useCallback(async () => {
+        if (!user) return
         setLoading(true)
         const [{ data: liked }, { data: pls }] = await Promise.all([
             supabase.from('liked_songs').select('*, songs(*)')
-                .eq('user_id', user!.id).order('liked_at', { ascending: false }),
-            supabase.from('playlists').select('*').eq('user_id', user!.id)
+                .eq('user_id', user.id).order('liked_at', { ascending: false }),
+            supabase.from('playlists').select('*').eq('user_id', user.id)
         ])
-        setSongs((liked || []).map((l: any) => l.songs).filter(Boolean))
+        setSongs(((liked || []) as LikedSong[]).map(l => l.songs).filter((s): s is Song => Boolean(s)))
         setPlaylists(pls || [])
         setLoading(false)
-    }
+    }, [user, supabase])
 
-    useEffect(() => { if (user) fetchAll() }, [user])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { if (user) fetchAll() }, [user, fetchAll])
 
     const shufflePlay = () => {
         if (!songs.length) return

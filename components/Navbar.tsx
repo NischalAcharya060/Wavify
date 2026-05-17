@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, User, LogOut, Menu as MenuIcon, ShieldCheck, Settings, Keyboard } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
@@ -92,7 +93,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                     aria-expanded={showProfile}
                 >
                     {googleAvatar ? (
-                        <img src={googleAvatar} alt="Avatar" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+                        <Image src={googleAvatar} alt="Avatar" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
                     ) : (
                         <div style={{
                             width: 28, height: 28, borderRadius: '50%',

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Music2, Home, ArrowLeft } from 'lucide-react'
+import { Music2, Home } from 'lucide-react'
 
 export default function NotFound() {
   return (

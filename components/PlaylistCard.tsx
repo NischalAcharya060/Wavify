@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Playlist } from '@/lib/types'
 import { ListMusic, MoreHorizontal, Trash2, Play } from 'lucide-react'
@@ -51,8 +52,8 @@ export default function PlaylistCard({ playlist, songCount = 0, thumbnail, onDel
           background: '#0e0e1a',
         }}>
           {thumbnail ? (
-            <img src={thumbnail} alt={playlist.name} loading="lazy" className="img-fade-in"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hovered ? 'scale(1.07)' : 'scale(1)', transition: 'transform 0.5s cubic-bezier(0.33,1,0.68,1)' }} />
+            <Image src={thumbnail} alt={playlist.name} fill sizes="(max-width: 640px) 50vw, 190px" className="img-fade-in"
+              style={{ objectFit: 'cover', transform: hovered ? 'scale(1.07)' : 'scale(1)', transition: 'transform 0.5s cubic-bezier(0.33,1,0.68,1)' }} />
           ) : (
             <div style={{ width: '100%', height: '100%', background: `linear-gradient(145deg, ${theme.primary}, ${theme.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
               {/* decorative ring */}

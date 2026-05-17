@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Add some songs to your library first' }, { status: 400 })
   }
 
-  const songList = songs.map(s => `- ID: "${s.id}" | Title: "${s.title}"`).join('\n')
+  const songList = songs.map((s: { id: string; title: string }) => `- ID: "${s.id}" | Title: "${s.title}"`).join('\n')
 
   const aiPrompt = `The user wants a playlist for: "${prompt}"
 

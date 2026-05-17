@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
@@ -161,7 +162,7 @@ export default function AddSongPage() {
           .select('video_id')
           .eq('user_id', user.id)
           .in('video_id', items.map(i => i.videoId))
-        existing = new Set((rows || []).map(r => r.video_id))
+        existing = new Set((rows || []).map((r: { video_id: string }) => r.video_id))
       }
       setExistingVideoIds(existing)
       setSelected(new Set(items.filter(i => !existing.has(i.videoId)).map(i => i.videoId)))
@@ -235,7 +236,7 @@ export default function AddSongPage() {
       .in('video_id', toImport.map(i => i.videoId))
 
     const existingMap = new Map<string, string>() // videoId -> songId
-    ;(existingRows || []).forEach(r => existingMap.set(r.video_id, r.id))
+    ;(existingRows || []).forEach((r: { video_id: string; id: string }) => existingMap.set(r.video_id, r.id))
 
     const newRows = toImport
       .filter(i => !existingMap.has(i.videoId))
@@ -292,7 +293,7 @@ export default function AddSongPage() {
         .eq('playlist_id', targetPlaylistId)
         .in('song_id', allSongIds)
 
-      const linkedSongIds = new Set((linkedRows || []).map(row => row.song_id))
+      const linkedSongIds = new Set((linkedRows || []).map((row: { song_id: string }) => row.song_id))
       const rows = allSongIds
         .filter(songId => !linkedSongIds.has(songId))
         .map(song_id => ({ playlist_id: targetPlaylistId, song_id }))
@@ -613,7 +614,7 @@ export default function AddSongPage() {
                   {preview && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="preview-card">
                       <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>
-                        <img src={preview.thumbnail} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <Image src={preview.thumbnail} alt="Preview" fill sizes="(max-width: 640px) 100vw, 800px" style={{ objectFit: 'cover' }} />
                         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,15,1) 0%, transparent 80%)' }} />
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(124,58,237,0.3)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -757,7 +758,7 @@ export default function AddSongPage() {
                                   ? <CheckSquare size={18} color="#a78bfa" />
                                   : <Square size={18} color="rgba(255,255,255,0.3)" />}
                               <span style={{ width: 22, fontSize: 12, color: 'rgba(160,145,200,0.5)', textAlign: 'right' }}>{idx + 1}</span>
-                              <img src={item.thumbnail} alt="" className="pl-thumb" />
+                              <Image src={item.thumbnail} alt="" width={64} height={36} className="pl-thumb" />
                               <div style={{ minWidth: 0, flex: 1 }}>
                                 <p style={{ color: inLibrary ? 'rgba(240,240,248,0.5)' : '#f0f0f8', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {item.title}

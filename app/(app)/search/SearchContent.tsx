@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useCallback, useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
@@ -70,39 +70,44 @@ function SearchContent() {
         }
     }, [])
 
-    const doSearch = async (q: string) => {
+    const doSearch = useCallback(async (q: string) => {
+        if (!user) return
         setLoading(true)
         const { data } = await supabase.from('songs').select('*')
-            .eq('user_id', user!.id).ilike('title', `%${q}%`)
+            .eq('user_id', user.id).ilike('title', `%${q}%`)
             .order('created_at', { ascending: false })
         setResults(data || [])
         setLoading(false)
-    }
+    }, [user, supabase])
 
-    const fetchPlaylists = async () => {
-        const { data } = await supabase.from('playlists').select('*').eq('user_id', user!.id)
+    const fetchPlaylists = useCallback(async () => {
+        if (!user) return
+        const { data } = await supabase.from('playlists').select('*').eq('user_id', user.id)
         setPlaylists(data || [])
-    }
-    const fetchLiked = async () => {
-        const { data } = await supabase.from('liked_songs').select('song_id').eq('user_id', user!.id)
-        setLikedIds(new Set((data || []).map((l: any) => l.song_id)))
-    }
+    }, [user, supabase])
+    const fetchLiked = useCallback(async () => {
+        if (!user) return
+        const { data } = await supabase.from('liked_songs').select('song_id').eq('user_id', user.id)
+        setLikedIds(new Set((data || []).map((l: { song_id: string }) => l.song_id)))
+    }, [user, supabase])
 
-    useEffect(() => { if (user) { fetchPlaylists(); fetchLiked() } }, [user])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { if (user) { fetchPlaylists(); fetchLiked() } }, [user, fetchPlaylists, fetchLiked])
 
     useEffect(() => {
         const normalizedQuery = debouncedQuery.trim()
         if (normalizedQuery && user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             doSearch(normalizedQuery)
             setRecentSearches(prev => {
-                const updated = [normalizedQuery, ...prev.filter(s => s !== normalizedQuery)].slice(0, 10)
+                const updated = [normalizedQuery, ...prev.filter((s: string) => s !== normalizedQuery)].slice(0, 10)
                 saveRecentSearches(updated)
                 return updated
             })
         } else {
             setResults([])
         }
-    }, [debouncedQuery, user])
+    }, [debouncedQuery, user, doSearch])
 
     const clearRecentSearches = () => {
         setRecentSearches([])

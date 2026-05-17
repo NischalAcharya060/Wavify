@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayer } from '@/lib/PlayerContext'
 import { useAuth } from '@/lib/AuthContext'
@@ -8,6 +9,36 @@ import { createClient } from '@/lib/supabase/client'
 import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts'
 import QueuePanel from '@/components/QueuePanel'
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Shuffle, Repeat, Repeat1, Music2, Timer, Zap, ListMusic, AlertCircle } from 'lucide-react'
+
+// Minimal YouTube IFrame API types — covers only what this player uses.
+interface YTPlayerInstance {
+  loadVideoById: (id: string) => void
+  playVideo: () => void
+  pauseVideo: () => void
+  setVolume: (v: number) => void
+  getDuration: () => number
+  getCurrentTime: () => number
+  seekTo: (t: number, allowSeekAhead?: boolean) => void
+}
+interface YTPlayerEvent { target: YTPlayerInstance; data?: number }
+interface YTPlayerConstructor {
+  new (elementId: string, opts: {
+    videoId: string
+    playerVars?: Record<string, number>
+    events?: {
+      onReady?: (e: YTPlayerEvent) => void
+      onStateChange?: (e: YTPlayerEvent) => void
+      onError?: (e: YTPlayerEvent) => void
+    }
+  }): YTPlayerInstance
+}
+interface YTNamespace { Player: YTPlayerConstructor }
+declare global {
+  interface Window {
+    YT?: YTNamespace
+    onYouTubeIframeAPIReady?: () => void
+  }
+}
 
 function EqBars() {
   return (
@@ -57,41 +88,53 @@ export default function MusicPlayer({ isCollapsed = false }: { isCollapsed?: boo
   const [showQueue, setShowQueue] = useState(false)
   const [playerError, setPlayerError] = useState(false)
   const [isLoadingTrack, setIsLoadingTrack] = useState(false)
-  const ytPlayer = useRef<any>(null)
-  const progressInterval = useRef<any>(null)
+  const ytPlayer = useRef<YTPlayerInstance | null>(null)
+  const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Keyboard shortcuts
   useKeyboardShortcuts()
 
+  // Initialize YouTube API
+  const ytApiInitialized = useRef(false)
   useEffect(() => {
-    if ((window as any).YT?.Player) { setPlayerReady(true); return }
+    if (ytApiInitialized.current) return
+    ytApiInitialized.current = true
+
+    if (window.YT?.Player) {
+      requestAnimationFrame(() => setPlayerReady(true))
+      return
+    }
     const tag = document.createElement('script'); tag.src = 'https://www.youtube.com/iframe_api'
     document.head.appendChild(tag)
-    ;(window as any).onYouTubeIframeAPIReady = () => setPlayerReady(true)
+    window.onYouTubeIframeAPIReady = () => setPlayerReady(true)
   }, [])
 
+  // Initialize player when song and API are ready
+  const playerInitialized = useRef<string | null>(null)
   useEffect(() => {
     if (!currentSong || !playerReady) return
-    setPlayerError(false)
-    setIsLoadingTrack(true)
+    if (playerInitialized.current === currentSong.id) return
+    playerInitialized.current = currentSong.id
+
     const init = () => {
       if (ytPlayer.current?.loadVideoById) { ytPlayer.current.loadVideoById(currentSong.video_id); return }
-      ytPlayer.current = new (window as any).YT.Player('yt-player', {
+      if (!window.YT?.Player) return
+      ytPlayer.current = new window.YT.Player('yt-player', {
         videoId: currentSong.video_id,
         playerVars: { autoplay: 1, controls: 0, playsinline: 1 },
         events: {
-          onReady(e: any) {
+          onReady(e: YTPlayerEvent) {
             playerRef.current = e.target
             e.target.setVolume(isMuted ? 0 : volume)
             if (isPlaying) e.target.playVideo()
             setIsLoadingTrack(false)
           },
-          onStateChange(e: any) {
+          onStateChange(e: YTPlayerEvent) {
             if (e.data === 0) nextSong()
             if (e.data === 1) {
               setDuration(e.target.getDuration())
               setIsLoadingTrack(false)
-              clearInterval(progressInterval.current)
+              if (progressInterval.current) clearInterval(progressInterval.current)
               progressInterval.current = setInterval(() => { if (e.target.getCurrentTime) setCurrentTime(e.target.getCurrentTime()) }, 500)
             }
           },
@@ -104,8 +147,8 @@ export default function MusicPlayer({ isCollapsed = false }: { isCollapsed?: boo
     }
     init()
     if (user) supabase.from('recently_played').insert({ user_id: user.id, song_id: currentSong.id })
-    return () => clearInterval(progressInterval.current)
-  }, [currentSong?.id, playerReady])
+    return () => { if (progressInterval.current) clearInterval(progressInterval.current) }
+  }, [currentSong, playerReady, isMuted, volume, isPlaying, nextSong, prevSong, setCurrentTime, setDuration, setPlayerError, setIsLoadingTrack, supabase, user, playerRef])
 
   useEffect(() => {
     if (!ytPlayer.current?.playVideo) return
@@ -149,7 +192,7 @@ export default function MusicPlayer({ isCollapsed = false }: { isCollapsed?: boo
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
               <div style={{ position: 'relative', width: 48, height: 48, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
                 {currentSong.thumbnail ? (
-                  <img src={currentSong.thumbnail} alt={currentSong.title} className="img-fade-in" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <Image src={currentSong.thumbnail} alt={currentSong.title} fill className="img-fade-in" style={{ objectFit: 'cover' }} sizes="48px" />
                 ) : (
                   <div style={{ width: '100%', height: '100%', background: 'rgba(124,58,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Music2 size={20} color="#a78bfa" />
@@ -193,8 +236,9 @@ export default function MusicPlayer({ isCollapsed = false }: { isCollapsed?: boo
                 <input type="range" min={0} max={duration || 100} value={currentTime} step={0.1}
                   aria-label="Seek position"
                   onChange={(e) => {
-                    const t = Number(e.target.value); setCurrentTime(t); playerRef.current?.seekTo(t, true);
-                  }} className="player-range" style={{ '--pct': `${pct}%` } as any} />
+                    const t = Number(e.target.value); setCurrentTime(t);
+                    if (playerRef.current?.seekTo) { playerRef.current.seekTo(t, true) }
+                  }} className="player-range" style={{ '--pct': `${pct}%` } as React.CSSProperties} />
                 <span className="desktop-only" style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', width: 35 }}>{fmt(duration)}</span>
               </div>
             </div>
@@ -209,7 +253,7 @@ export default function MusicPlayer({ isCollapsed = false }: { isCollapsed?: boo
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', padding: '6px 10px', borderRadius: 10 }}>
                 <button onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>{isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}</button>
-                <input type="range" min={0} max={100} value={isMuted ? 0 : volume} aria-label="Volume" onChange={e => setVolume(Number(e.target.value))} className="player-range" style={{ width: 60, '--pct': `${isMuted ? 0 : volume}%` } as any} />
+                <input type="range" min={0} max={100} value={isMuted ? 0 : volume} aria-label="Volume" onChange={e => setVolume(Number(e.target.value))} className="player-range" style={{ width: 60, '--pct': `${isMuted ? 0 : volume}%` } as React.CSSProperties} />
               </div>
             </div>
           </div>

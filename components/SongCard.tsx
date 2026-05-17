@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Song, Playlist } from '@/lib/types'
 import { usePlayer } from '@/lib/PlayerContext'
@@ -8,7 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
 import { useContextMenu } from '@/lib/useContextMenu'
 import toast from 'react-hot-toast'
-import { Play, Pause, Heart, MoreHorizontal, Plus, Trash2, Music2, ListMusic, ChevronRight } from 'lucide-react'
+import { Play, Heart, MoreHorizontal, Plus, Trash2, Music2, ListMusic, ChevronRight } from 'lucide-react'
 
 interface SongCardProps {
     song: Song; queue?: Song[]; isLiked?: boolean; onLikeToggle?: () => void
@@ -83,7 +84,7 @@ export default function SongCard({ song, queue, isLiked = false, onLikeToggle, o
                 onClick={handlePlay} onContextMenu={openCtx}>
                 <div style={{ aspectRatio: '1', position: 'relative', overflow: 'hidden', margin: 8, borderRadius: 14, background: 'rgba(255,255,255,0.03)' }}>
                     {song.thumbnail
-                        ? <img src={song.thumbnail} alt={song.title} className="img-fade-in" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <Image src={song.thumbnail} alt={song.title} fill className="img-fade-in" sizes="(max-width: 640px) 50vw, 165px" style={{ objectFit: 'cover' }} />
                         : <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Music2 size={24} color="rgba(255,255,255,0.2)" /></div>
                     }
                     {isActive && isPlaying && (
@@ -149,7 +150,7 @@ export default function SongCard({ song, queue, isLiked = false, onLikeToggle, o
                 {/* Thumbnail */}
                 <div className="song-thumb" style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', flexShrink: 0, position: 'relative', background: 'rgba(255,255,255,0.03)' }}>
                     {song.thumbnail
-                        ? <img src={song.thumbnail} alt={song.title} className="img-fade-in" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <Image src={song.thumbnail} alt={song.title} fill className="img-fade-in" sizes="44px" style={{ objectFit: 'cover' }} />
                         : <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Music2 size={16} color="rgba(255,255,255,0.2)" /></div>
                     }
                 </div>
@@ -212,7 +213,13 @@ export default function SongCard({ song, queue, isLiked = false, onLikeToggle, o
     )
 }
 
-function MenuBtn({ icon, label, onClick, danger }: any) {
+interface MenuBtnProps {
+    icon: ReactNode
+    label: string
+    onClick: (e?: React.MouseEvent) => void
+    danger?: boolean
+}
+function MenuBtn({ icon, label, onClick, danger }: MenuBtnProps) {
     return (
         <button onClick={onClick}
                 style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '12px', borderRadius: 12, fontSize: 14, color: danger && label !== 'Like' ? '#fb7185' : '#fff', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 500 }}>
@@ -221,7 +228,18 @@ function MenuBtn({ icon, label, onClick, danger }: any) {
     )
 }
 
-function CtxMenu({ playlists, liked, showDelete, onLike, onAdd, onDelete, x, y, onClose }: any) {
+interface CtxMenuProps {
+    playlists: Playlist[]
+    liked: boolean
+    showDelete?: boolean
+    onLike: (e?: React.MouseEvent) => void
+    onAdd: (playlistId: string, playlistName: string) => void
+    onDelete: () => void
+    x: number
+    y: number
+    onClose: () => void
+}
+function CtxMenu({ playlists, liked, showDelete, onLike, onAdd, onDelete, x, y, onClose }: CtxMenuProps) {
     const [showPL, setShowPL] = useState(false)
     // Ensure context menu doesn't go off screen
     const adjustedX = x + 200 > window.innerWidth ? x - 200 : x;

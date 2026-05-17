@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
@@ -49,44 +49,48 @@ export default function LibraryPage() {
   const [deletePlaylistTarget, setDeletePlaylistTarget] = useState<string | null>(null)
   const supabase = createClient()
 
-  const fetchSongs = async () => {
+  const fetchSongs = useCallback(async () => {
+    if (!user) return
     const { data } = await supabase.from('songs').select('*')
-      .eq('user_id', user!.id).order('created_at', { ascending: false })
+      .eq('user_id', user.id).order('created_at', { ascending: false })
     setSongs(data || [])
-  }
+  }, [user, supabase])
 
-  const fetchPlaylists = async () => {
+  const fetchPlaylists = useCallback(async () => {
+    if (!user) return
     const { data: pls } = await supabase.from('playlists').select('*')
-      .eq('user_id', user!.id).order('created_at', { ascending: false })
+      .eq('user_id', user.id).order('created_at', { ascending: false })
     setPlaylists(pls || [])
 
     if (pls && pls.length > 0) {
       const { data: counts } = await supabase
         .from('playlist_songs')
         .select('playlist_id')
-        .in('playlist_id', pls.map(p => p.id))
+        .in('playlist_id', pls.map((p: { id: string }) => p.id))
 
       const countMap: Record<string, number> = {}
-      pls.forEach(p => { countMap[p.id] = 0 })
-      ;(counts || []).forEach((row: any) => {
+      pls.forEach((p: { id: string }) => { countMap[p.id] = 0 })
+      ;(counts || []).forEach((row: { playlist_id: string }) => {
         countMap[row.playlist_id] = (countMap[row.playlist_id] || 0) + 1
       })
       setPlaylistCounts(countMap)
     }
-  }
+  }, [user, supabase])
 
-  const fetchLiked = async () => {
-    const { data } = await supabase.from('liked_songs').select('song_id').eq('user_id', user!.id)
-    setLikedIds(new Set((data || []).map((l: any) => l.song_id)))
-  }
+  const fetchLiked = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase.from('liked_songs').select('song_id').eq('user_id', user.id)
+    setLikedIds(new Set((data || []).map((l: { song_id: string }) => l.song_id)))
+  }, [user, supabase])
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true)
     await Promise.all([fetchSongs(), fetchPlaylists(), fetchLiked()])
     setLoading(false)
-  }
+  }, [fetchSongs, fetchPlaylists, fetchLiked])
 
-  useEffect(() => { if (user) fetchAll() }, [user])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { if (user) fetchAll() }, [user, fetchAll])
 
   const deletePlaylist = async (id: string) => {
     setPlaylists(prev => prev.filter(p => p.id !== id))

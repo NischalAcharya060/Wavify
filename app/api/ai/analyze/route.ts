@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No songs found' }, { status: 404 })
   }
 
-  const songList = songs.map(s => `- ID: "${s.id}" | Title: "${s.title}"`).join('\n')
+  const songList = songs.map((s: { id: string; title: string }) => `- ID: "${s.id}" | Title: "${s.title}"`).join('\n')
 
   const prompt = `Analyze these songs based on their titles. For each song, provide:
 - mood: one word (e.g. "happy", "melancholic", "energetic", "chill", "dark", "romantic")

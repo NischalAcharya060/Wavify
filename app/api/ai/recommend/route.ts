@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     supabase.from('recently_played').select('songs(title)').eq('user_id', user.id).order('played_at', { ascending: false }).limit(20),
   ])
 
-  const allSongs = songsRes.data?.map(s => s.title) || []
+  const allSongs = songsRes.data?.map((s: { title: string }) => s.title) || []
   const likedTitles = likedRes.data?.map((l: Record<string, unknown>) => (l.songs as { title: string })?.title).filter(Boolean) || []
   const recentTitles = recentRes.data?.map((r: Record<string, unknown>) => (r.songs as { title: string })?.title).filter(Boolean) || []
 

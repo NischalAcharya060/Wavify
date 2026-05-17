@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
@@ -28,12 +29,14 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     const displayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
     const initial = displayName[0]?.toUpperCase() ?? 'U'
 
-    useEffect(() => { if (user) fetchPlaylists() }, [user])
-
-    const fetchPlaylists = async () => {
-        const { data } = await supabase.from('playlists').select('*').eq('user_id', user!.id).order('created_at', { ascending: false })
+    const fetchPlaylists = useCallback(async () => {
+        if (!user) return
+        const { data } = await supabase.from('playlists').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         setPlaylists(data || [])
-    }
+    }, [user, supabase])
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { if (user) { fetchPlaylists() } }, [user, fetchPlaylists])
 
     const createPlaylist = async () => {
         if (!newName.trim()) return
@@ -169,7 +172,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                         }}>
                             <Link href="/profile" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                                 {googleAvatar ? (
-                                    <img src={googleAvatar} alt="User avatar" style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover' }} />
+                                    <Image src={googleAvatar} alt="User avatar" width={36} height={36} style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover' }} />
                                 ) : (
                                     <div style={{
                                         width: 36, height: 36, borderRadius: 10,
@@ -200,7 +203,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
                             <Link href="/profile" aria-label="Profile">
                                 {googleAvatar ? (
-                                    <img src={googleAvatar} alt="User avatar" style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                    <Image src={googleAvatar} alt="User avatar" width={40} height={40} style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
                                 ) : (
                                     <div style={{ width: 40, height: 40, borderRadius: 12, background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#fff' }}>
                                         {initial}

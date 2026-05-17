@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
-import { Song, Playlist } from '@/lib/types'
+import { Song, Playlist, PlaylistSong, LikedSong } from '@/lib/types'
 import SongCard from '@/components/SongCard'
 import { usePlayer } from '@/lib/PlayerContext'
 import toast from 'react-hot-toast'
@@ -35,21 +35,22 @@ export default function PlaylistPage() {
   const { playSong } = usePlayer()
   const supabase = createClient()
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
+    if (!user) return
     setLoading(true)
     const [{ data: pl }, { data: ps }, { data: liked }, { data: pls }] = await Promise.all([
       supabase.from('playlists').select('*').eq('id', id).single(),
       supabase.from('playlist_songs').select('*, songs(*)').eq('playlist_id', id),
-      supabase.from('liked_songs').select('song_id').eq('user_id', user!.id),
-      supabase.from('playlists').select('*').eq('user_id', user!.id),
+      supabase.from('liked_songs').select('song_id').eq('user_id', user.id),
+      supabase.from('playlists').select('*').eq('user_id', user.id),
     ])
     setPlaylist(pl)
     setEditName(pl?.name || '')
-    setSongs((ps || []).map((r: any) => r.songs).filter(Boolean))
-    setLikedIds(new Set((liked || []).map((l: any) => l.song_id)))
+    setSongs(((ps || []) as PlaylistSong[]).map(r => r.songs).filter((s): s is Song => Boolean(s)))
+    setLikedIds(new Set(((liked || []) as Pick<LikedSong, 'song_id'>[]).map(l => l.song_id)))
     setAllPlaylists(pls || [])
     setLoading(false)
-  }
+  }, [user, id, supabase])
 
   const removeSong = async (songId: string) => {
     await supabase.from('playlist_songs').delete().eq('playlist_id', id).eq('song_id', songId)
@@ -71,7 +72,8 @@ export default function PlaylistPage() {
     toast.success('Playlist renamed')
   }
 
-  useEffect(() => { if (user && id) fetchAll() }, [user, id])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { if (user && id) fetchAll() }, [user, id, fetchAll])
 
   const theme = playlist ? themes[playlist.name.charCodeAt(0) % themes.length] : themes[0]
 

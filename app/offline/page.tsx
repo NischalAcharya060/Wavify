@@ -26,7 +26,7 @@ export default function OfflinePage() {
                     <WifiOff size={32} color="#fff" />
                 </div>
                 <h1 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 10px', letterSpacing: '-0.02em' }}>
-                    You're offline
+                    You&apos;re offline
                 </h1>
                 <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 1.55, margin: '0 0 24px' }}>
                     Wavify needs a connection to stream tracks from YouTube. Reconnect and try again — your library is safe.

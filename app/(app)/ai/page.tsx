@@ -104,7 +104,7 @@ export default function AIStudioPage() {
     try {
       const { data: songs } = await supabase.from('songs').select('id').eq('user_id', user!.id).limit(20)
       if (!songs?.length) { setAnaError('Add some songs to your library first'); setLoading(false); return }
-      const res = await fetch('/api/ai/analyze', { method: 'POST', headers: buildAIHeaders(), body: JSON.stringify({ songIds: songs.map(s => s.id) }) })
+      const res = await fetch('/api/ai/analyze', { method: 'POST', headers: buildAIHeaders(), body: JSON.stringify({ songIds: songs.map((s: { id: string }) => s.id) }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
       setAnalyses(data.results || [])

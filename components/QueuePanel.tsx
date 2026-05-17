@@ -1,8 +1,9 @@
 'use client'
 
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayer } from '@/lib/PlayerContext'
-import { X, Music2, Trash2, ListMusic } from 'lucide-react'
+import { X, Music2, ListMusic } from 'lucide-react'
 
 interface QueuePanelProps {
   open: boolean
@@ -76,7 +77,7 @@ export default function QueuePanel({ open, onClose }: QueuePanelProps) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
                     {currentSong.thumbnail ? (
-                      <img src={currentSong.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <Image src={currentSong.thumbnail} alt="" fill sizes="44px" style={{ objectFit: 'cover' }} />
                     ) : (
                       <div style={{ width: '100%', height: '100%', background: 'rgba(124,58,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Music2 size={18} color="#a78bfa" />
@@ -86,6 +87,7 @@ export default function QueuePanel({ open, onClose }: QueuePanelProps) {
                       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 4 }}>
                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 12 }}>
                           {[0, 1, 2].map(i => (
+                            // eslint-disable-next-line react-hooks/purity
                             <div key={i} className="eq-bar" style={{ width: 2, height: 4 + Math.random() * 8 }} />
                           ))}
                         </div>
@@ -131,9 +133,9 @@ export default function QueuePanel({ open, onClose }: QueuePanelProps) {
                       <span style={{ width: 22, fontSize: 11, color: 'rgba(255,255,255,0.2)', textAlign: 'center', flexShrink: 0 }}>
                         {i + 1}
                       </span>
-                      <div style={{ width: 36, height: 36, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
+                      <div style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
                         {song.thumbnail ? (
-                          <img src={song.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <Image src={song.thumbnail} alt="" fill sizes="36px" style={{ objectFit: 'cover' }} />
                         ) : (
                           <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Music2 size={14} color="rgba(255,255,255,0.2)" />

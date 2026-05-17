@@ -5,6 +5,17 @@ import { Song } from '@/lib/types'
 
 export type RepeatMode = 'off' | 'all' | 'one'
 
+// Minimal shape of the YouTube IFrame player instance used here.
+export interface YTPlayerLike {
+  loadVideoById?: (id: string) => void
+  playVideo?: () => void
+  pauseVideo?: () => void
+  setVolume?: (v: number) => void
+  getDuration?: () => number
+  getCurrentTime?: () => number
+  seekTo?: (t: number, allowSeekAhead?: boolean) => void
+}
+
 interface PlayerContextType {
   currentSong: Song | null
   queue: Song[]
@@ -29,7 +40,7 @@ interface PlayerContextType {
   toggleShuffle: () => void
   cycleRepeat: () => void
   setSleepTimer: (minutes: number | null) => void
-  playerRef: React.MutableRefObject<any>
+  playerRef: React.MutableRefObject<YTPlayerLike | null>
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null)
@@ -43,7 +54,7 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   } catch { return fallback }
 }
 
-function saveToStorage(key: string, value: any) {
+function saveToStorage(key: string, value: unknown) {
   if (typeof window === 'undefined') return
   try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
 }
@@ -62,7 +73,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [sleepTimer, setSleepTimerState] = useState<number | null>(null)
   const [sleepTimerEnd, setSleepTimerEnd] = useState<number | null>(null)
 
-  const playerRef = useRef<any>(null)
+  const playerRef = useRef<YTPlayerLike | null>(null)
   const sleepIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const initializedRef = useRef(false)
 
@@ -73,6 +84,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const savedVolume = loadFromStorage<number>('wavify_volume', 80)
     const savedShuffle = loadFromStorage<boolean>('wavify_shuffle', false)
     const savedRepeat = loadFromStorage<RepeatMode>('wavify_repeat', 'off')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVolumeState(savedVolume)
     setIsShuffled(savedShuffle)
     setRepeatMode(savedRepeat)
@@ -98,6 +110,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (sleepTimerEnd === null) {
       if (sleepIntervalRef.current) clearInterval(sleepIntervalRef.current)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSleepTimerState(null)
       return
     }

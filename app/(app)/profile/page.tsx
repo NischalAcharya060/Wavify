@@ -1,16 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
-import { LogOut, Music2, Heart, ListMusic, Clock, ShieldCheck, ChevronRight, CheckCircle2, Edit2, X, Check, Lock, Eye, EyeOff, KeyRound } from 'lucide-react'
+import { LogOut, ChevronRight, CheckCircle2, Edit2, Check, Eye, EyeOff, KeyRound } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function ProfilePage() {
     const { user, signOut } = useAuth()
-    const [stats, setStats] = useState({ songs: 0, playlists: 0, liked: 0, played: 0 })
-    const [loading, setLoading] = useState(true)
+    const [, setStats] = useState({ songs: 0, playlists: 0, liked: 0, played: 0 })
+    const [, setLoading] = useState(true)
 
     // Username States
     const [isEditing, setIsEditing] = useState(false)
@@ -27,31 +28,32 @@ export default function ProfilePage() {
 
     // FIX: More robust provider detection
     const providers = user?.app_metadata?.providers || []
-    const identities = user?.identities?.map(id => id.provider) || []
+    const identities = user?.identities?.map((id: { provider: string }) => id.provider) || []
     const isGoogleConnected = providers.includes('google') || identities.includes('google')
     const isEmailUser = providers.includes('email') || identities.includes('email')
 
     const googleAvatar = user?.user_metadata?.avatar_url
     const currentUsername = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
 
+    const fetchStats = useCallback(async () => {
+        if (!user) return
+        try {
+            const [songs, playlists, liked, played] = await Promise.all([
+                supabase.from('songs').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+                supabase.from('playlists').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+                supabase.from('liked_songs').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+                supabase.from('recently_played').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+            ])
+            setStats({ songs: songs.count || 0, playlists: playlists.count || 0, liked: liked.count || 0, played: played.count || 0 })
+        } finally { setLoading(false) }
+    }, [user, supabase])
+
     useEffect(() => {
         if (user) {
             fetchStats()
             setNewUsername(currentUsername)
         }
-    }, [user])
-
-    const fetchStats = async () => {
-        try {
-            const [songs, playlists, liked, played] = await Promise.all([
-                supabase.from('songs').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-                supabase.from('playlists').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-                supabase.from('liked_songs').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-                supabase.from('recently_played').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-            ])
-            setStats({ songs: songs.count || 0, playlists: playlists.count || 0, liked: liked.count || 0, played: played.count || 0 })
-        } finally { setLoading(false) }
-    }
+    }, [user, fetchStats, currentUsername])
 
     const handleUpdateUsername = async () => {
         if (!newUsername.trim() || newUsername === currentUsername) return setIsEditing(false)
@@ -92,7 +94,7 @@ export default function ProfilePage() {
             <div className="action-card" style={{ display: 'flex', alignItems: 'center', gap: 24, padding: 32, background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1), transparent)' }}>
                 <div style={{ position: 'relative' }}>
                     {googleAvatar ? (
-                        <img src={googleAvatar} style={{ width: 80, height: 80, borderRadius: 24, border: '2px solid #7c3aed' }} />
+                        <Image src={googleAvatar} alt="User avatar" width={80} height={80} style={{ width: 80, height: 80, borderRadius: 24, border: '2px solid #7c3aed' }} />
                     ) : (
                         <div style={{ width: 80, height: 80, borderRadius: 24, background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 800 }}>{currentUsername[0]}</div>
                     )}

@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
-import { Song, Playlist } from '@/lib/types'
+import { Song, Playlist, RecentlyPlayed, LikedSong } from '@/lib/types'
 import SongCard from '@/components/SongCard'
 import PlaylistCard from '@/components/PlaylistCard'
 import AddSongModal from '@/components/AddSongModal'
@@ -56,26 +56,29 @@ export default function HomePage() {
     return 'Good evening'
   }
 
-  const fetchSongs = async () => {
+  const fetchSongs = useCallback(async () => {
+    if (!user) return
     const { data } = await supabase.from('songs').select('*')
-      .eq('user_id', user!.id).order('created_at', { ascending: false })
+      .eq('user_id', user.id).order('created_at', { ascending: false })
     setSongs(data || [])
-  }
+  }, [user, supabase])
 
-  const fetchRecent = async () => {
+  const fetchRecent = useCallback(async () => {
+    if (!user) return
     const { data } = await supabase.from('recently_played')
-      .select('*, songs(*)').eq('user_id', user!.id)
+      .select('*, songs(*)').eq('user_id', user.id)
       .order('played_at', { ascending: false }).limit(8)
     const seen = new Set<string>(); const unique: Song[] = []
-    ;(data || []).forEach((r: any) => {
+    ;((data || []) as RecentlyPlayed[]).forEach(r => {
       if (r.songs && !seen.has(r.songs.id)) { seen.add(r.songs.id); unique.push(r.songs) }
     })
     setRecentSongs(unique)
-  }
+  }, [user, supabase])
 
-  const fetchPlaylists = async () => {
+  const fetchPlaylists = useCallback(async () => {
+    if (!user) return
     const { data: pls } = await supabase.from('playlists').select('*')
-      .eq('user_id', user!.id).order('created_at', { ascending: false }).limit(8)
+      .eq('user_id', user.id).order('created_at', { ascending: false }).limit(8)
     setPlaylists(pls || [])
 
     // Fetch song counts for each playlist
@@ -83,29 +86,31 @@ export default function HomePage() {
       const { data: counts } = await supabase
         .from('playlist_songs')
         .select('playlist_id')
-        .in('playlist_id', pls.map(p => p.id))
+        .in('playlist_id', pls.map((p: { id: string }) => p.id))
 
       const countMap: Record<string, number> = {}
-      pls.forEach(p => { countMap[p.id] = 0 })
-      ;(counts || []).forEach((row: any) => {
+      pls.forEach((p: { id: string }) => { countMap[p.id] = 0 })
+      ;(counts || []).forEach((row: { playlist_id: string }) => {
         countMap[row.playlist_id] = (countMap[row.playlist_id] || 0) + 1
       })
       setPlaylistCounts(countMap)
     }
-  }
+  }, [user, supabase])
 
-  const fetchLiked = async () => {
-    const { data } = await supabase.from('liked_songs').select('song_id').eq('user_id', user!.id)
-    setLikedIds(new Set((data || []).map((l: any) => l.song_id)))
-  }
+  const fetchLiked = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase.from('liked_songs').select('song_id').eq('user_id', user.id)
+    setLikedIds(new Set(((data || []) as Pick<LikedSong, 'song_id'>[]).map(l => l.song_id)))
+  }, [user, supabase])
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true)
     await Promise.all([fetchSongs(), fetchRecent(), fetchPlaylists(), fetchLiked()])
     setLoading(false)
-  }
+  }, [fetchSongs, fetchRecent, fetchPlaylists, fetchLiked])
 
-  useEffect(() => { if (user) fetchAll() }, [user])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { if (user) fetchAll() }, [user, fetchAll])
 
   const sortedSongs = [...songs].sort((a, b) => {
     const v = sortKey === 'title'

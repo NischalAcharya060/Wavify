@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ title, items })
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch playlist' }, { status: 500 })
   }
 }

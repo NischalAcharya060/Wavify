@@ -29,7 +29,7 @@ export function useKeyboardShortcuts() {
           } else {
             const newTime = Math.min(currentTime + 10, 9999)
             setCurrentTime(newTime)
-            playerRef.current?.seekTo(newTime, true)
+            if (playerRef.current?.seekTo) { playerRef.current.seekTo(newTime, true) }
           }
           break
         case 'arrowleft':
@@ -39,7 +39,7 @@ export function useKeyboardShortcuts() {
           } else {
             const newTime = Math.max(currentTime - 10, 0)
             setCurrentTime(newTime)
-            playerRef.current?.seekTo(newTime, true)
+            if (playerRef.current?.seekTo) { playerRef.current.seekTo(newTime, true) }
           }
           break
         case 'arrowup':

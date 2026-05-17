@@ -37,6 +37,7 @@ export function SongListSkeleton({ count = 8 }: { count?: number }) {
         >
           <Skeleton width={42} height={42} borderRadius={8} />
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
+            {/* eslint-disable-next-line react-hooks/purity */}
             <Skeleton height={12} width={`${35 + Math.random() * 30}%`} borderRadius={4} />
             <Skeleton height={10} width="20%" borderRadius={4} />
           </div>

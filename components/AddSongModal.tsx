@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/AuthContext'
@@ -31,7 +32,7 @@ export default function AddSongModal({ onClose, onAdded }: AddSongModalProps) {
       const title = await fetchYouTubeTitle(videoId)
       const thumbnail = getYouTubeThumbnail(videoId)
       setPreview({ title, thumbnail, videoId })
-    } catch (e) {
+    } catch {
       setError('Could not fetch video details.')
     } finally {
       setLoading(false)
@@ -221,7 +222,7 @@ export default function AddSongModal({ onClose, onAdded }: AddSongModalProps) {
                                 overflow: 'hidden'
                               }}>
                             <div className="relative aspect-video">
-                              <img src={preview.thumbnail} alt={preview.title} className="w-full h-full object-cover" />
+                              <Image src={preview.thumbnail} alt={preview.title} fill sizes="(max-width: 640px) 100vw, 440px" className="object-cover" />
                               <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(18,18,26,0.95) 0%, transparent 60%)' }} />
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(124, 58, 237, 0.3)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
