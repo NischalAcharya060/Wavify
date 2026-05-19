@@ -46,22 +46,18 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/signup') ||
     pathname.startsWith('/reset-password')
 
-  // Logged-in users skip the landing page and go straight to /home.
   if (user && isLandingRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/home'
     return NextResponse.redirect(url)
   }
 
-  // Logged-out users can see the landing page and the auth pages; everything
-  // else (e.g. /home, /library) sends them to /login.
   if (!user && !isLandingRoute && !isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // Logged-in users don't need to see auth pages.
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/home'

@@ -28,7 +28,6 @@ function MailBadge() {
   )
 }
 
-/** Server-side OTP expiry. Mirror the Supabase Auth setting (default 600s = 10min). */
 const OTP_EXPIRY_SECONDS = 600
 
 type Stage = 'form' | 'verify' | 'done'
@@ -53,7 +52,6 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [focusedField, setFocusedField] = useState<string | null>(null)
 
-  // OTP state
   const [code, setCode] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [resending, setResending] = useState(false)
@@ -62,7 +60,6 @@ export default function SignupPage() {
   const expiryStartRef = useRef<number | null>(null)
   const autoVerifyRef = useRef<string>('')
 
-  /** Drive the countdown + resend cooldown while we're on the verify step. */
   useEffect(() => {
     if (stage !== 'verify') return
     const tick = () => {
@@ -92,10 +89,6 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        // Fallback for the link-style email (`{{ .ConfirmationURL }}`).
-        // If the user clicks the link instead of typing the code, they end
-        // up at /auth/callback?code=... which exchanges and routes to /home.
-        // When the template uses `{{ .Token }}` (recommended), this is unused.
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/home`,
       },
     })
@@ -106,24 +99,17 @@ export default function SignupPage() {
       return
     }
 
-    // If email confirmation is disabled in Supabase, signUp returns a
-    // session immediately — skip verification.
     if (data.session) {
       router.push('/home')
       router.refresh()
       return
     }
 
-    // Supabase returns `user` with an empty `identities` array when the
-    // email is already registered — silent success, no email sent. Surface
-    // this so the user knows to sign in instead of staring at a verify
-    // screen waiting for an email that will never arrive.
     if (data.user && data.user.identities && data.user.identities.length === 0) {
       setError('An account with this email already exists. Try signing in instead.')
       return
     }
 
-    // Verification email sent. Move to the OTP step.
     expiryStartRef.current = Date.now()
     setExpiresIn(OTP_EXPIRY_SECONDS)
     setResendCooldown(30)
@@ -137,7 +123,6 @@ export default function SignupPage() {
       setError('Enter the 6-digit code from your email')
       return
     }
-    // Prevent the auto-verify effect from re-firing for the same code.
     if (autoVerifyRef.current === token && verifying) return
     autoVerifyRef.current = token
     setError('')
@@ -154,7 +139,6 @@ export default function SignupPage() {
       return
     }
     setStage('done')
-    // Brief celebration, then route into the app.
     setTimeout(() => {
       router.push('/home')
       router.refresh()
