@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { AuthPage, Spinner, GoogleIcon, EmailIcon, LockIcon, Divider, InputField, AuthLink } from '@/components/AuthLayout'
 import GoogleOneTap from '@/components/GoogleOneTap'
+import OtpInput from '@/components/OtpInput'
 
 function CheckBadge() {
   return (
@@ -17,7 +18,32 @@ function CheckBadge() {
   )
 }
 
+function MailBadge() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+      <circle cx="28" cy="28" r="27" stroke="rgba(167,139,250,0.25)" strokeWidth="1.5"/>
+      <circle cx="28" cy="28" r="20" fill="rgba(124,58,237,0.1)" stroke="rgba(167,139,250,0.4)" strokeWidth="1"/>
+      <path d="M18 22l10 7 10-7M18 22h20v12H18z" stroke="#c4b5fd" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    </svg>
+  )
+}
+
+/** Server-side OTP expiry. Mirror the Supabase Auth setting (default 600s = 10min). */
+const OTP_EXPIRY_SECONDS = 600
+
+type Stage = 'form' | 'verify' | 'done'
+
+function formatMs(seconds: number) {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
 export default function SignupPage() {
+  const router = useRouter()
+  const supabase = createClient()
+
+  const [stage, setStage] = useState<Stage>('form')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -25,9 +51,30 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
-  const [done, setDone] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
-  const supabase = createClient()
+
+  // OTP state
+  const [code, setCode] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [expiresIn, setExpiresIn] = useState(OTP_EXPIRY_SECONDS)
+  const expiryStartRef = useRef<number | null>(null)
+  const autoVerifyRef = useRef<string>('')
+
+  /** Drive the countdown + resend cooldown while we're on the verify step. */
+  useEffect(() => {
+    if (stage !== 'verify') return
+    const tick = () => {
+      if (expiryStartRef.current != null) {
+        const elapsed = Math.floor((Date.now() - expiryStartRef.current) / 1000)
+        setExpiresIn(Math.max(0, OTP_EXPIRY_SECONDS - elapsed))
+      }
+      setResendCooldown(c => (c > 0 ? c - 1 : 0))
+    }
+    const id = window.setInterval(tick, 1000)
+    return () => window.clearInterval(id)
+  }, [stage])
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,10 +88,93 @@ export default function SignupPage() {
       return
     }
     setLoading(true)
-    const { error: err } = await supabase.auth.signUp({ email, password })
+    const { data, error: err } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        // Fallback for the link-style email (`{{ .ConfirmationURL }}`).
+        // If the user clicks the link instead of typing the code, they end
+        // up at /auth/callback?code=... which exchanges and routes to /home.
+        // When the template uses `{{ .Token }}` (recommended), this is unused.
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/home`,
+      },
+    })
     setLoading(false)
-    if (err) setError(err.message)
-    else setDone(true)
+
+    if (err) {
+      setError(err.message)
+      return
+    }
+
+    // If email confirmation is disabled in Supabase, signUp returns a
+    // session immediately — skip verification.
+    if (data.session) {
+      router.push('/home')
+      router.refresh()
+      return
+    }
+
+    // Supabase returns `user` with an empty `identities` array when the
+    // email is already registered — silent success, no email sent. Surface
+    // this so the user knows to sign in instead of staring at a verify
+    // screen waiting for an email that will never arrive.
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      setError('An account with this email already exists. Try signing in instead.')
+      return
+    }
+
+    // Verification email sent. Move to the OTP step.
+    expiryStartRef.current = Date.now()
+    setExpiresIn(OTP_EXPIRY_SECONDS)
+    setResendCooldown(30)
+    setCode('')
+    setStage('verify')
+  }
+
+  const handleVerify = async (full?: string) => {
+    const token = (full ?? code).trim()
+    if (token.length !== 6) {
+      setError('Enter the 6-digit code from your email')
+      return
+    }
+    // Prevent the auto-verify effect from re-firing for the same code.
+    if (autoVerifyRef.current === token && verifying) return
+    autoVerifyRef.current = token
+    setError('')
+    setVerifying(true)
+    const { error: err } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup',
+    })
+    setVerifying(false)
+    if (err) {
+      setError(err.message)
+      setCode('')
+      return
+    }
+    setStage('done')
+    // Brief celebration, then route into the app.
+    setTimeout(() => {
+      router.push('/home')
+      router.refresh()
+    }, 900)
+  }
+
+  const handleResend = async () => {
+    if (resendCooldown > 0) return
+    setError('')
+    setResending(true)
+    const { error: err } = await supabase.auth.resend({ type: 'signup', email })
+    setResending(false)
+    if (err) {
+      setError(err.message)
+      return
+    }
+    expiryStartRef.current = Date.now()
+    setExpiresIn(OTP_EXPIRY_SECONDS)
+    setResendCooldown(30)
+    setCode('')
   }
 
   const handleGoogle = async () => {
@@ -59,11 +189,13 @@ export default function SignupPage() {
     }
   }
 
+  const expired = stage === 'verify' && expiresIn === 0
+
   return (
     <AuthPage title="Join Wavify" subtitle="Start your musical journey today">
-      {!done && <GoogleOneTap context="signup" />}
+      {stage === 'form' && <GoogleOneTap context="signup" />}
       <AnimatePresence mode="wait">
-        {done ? (
+        {stage === 'done' ? (
           <motion.div
             key="done"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -79,35 +211,109 @@ export default function SignupPage() {
               color: '#f0f0ff',
               margin: '20px 0 10px',
             }}>
-              Check your inbox
+              You&apos;re in!
             </h2>
-            <p style={{
-              fontSize: 14,
-              color: 'rgba(160,150,200,0.7)',
-              marginBottom: 24,
-            }}>
-              Verification link sent to <strong style={{ color: '#c4a7ff' }}>{email}</strong>
+            <p style={{ fontSize: 14, color: 'rgba(160,150,200,0.7)', marginBottom: 16 }}>
+              Email verified · Taking you to your library…
             </p>
-            <Link
-              href="/login"
+            <Spinner />
+          </motion.div>
+        ) : stage === 'verify' ? (
+          <motion.div
+            key="verify"
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.3 }}
+            style={{ textAlign: 'center' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <MailBadge />
+            </div>
+            <h2 style={{
+              fontFamily: 'Instrument Serif, serif',
+              fontStyle: 'italic',
+              fontSize: 24,
+              color: '#f0f0ff',
+              margin: '8px 0 6px',
+            }}>
+              Verify your email
+            </h2>
+            <p style={{ fontSize: 13.5, color: 'rgba(160,150,200,0.7)', marginBottom: 22, lineHeight: 1.55 }}>
+              We sent a 6-digit code to <strong style={{ color: '#c4a7ff' }}>{email}</strong>.<br />
+              It expires in <strong style={{ color: expired ? '#fca5a5' : '#c4a7ff' }}>
+                {formatMs(expiresIn)}
+              </strong>.
+            </p>
+
+            <div style={{ marginBottom: 16 }}>
+              <OtpInput
+                value={code}
+                onChange={setCode}
+                onComplete={v => { if (!verifying && !expired) handleVerify(v) }}
+                disabled={verifying || expired}
+                autoFocus
+                error={!!error}
+              />
+            </div>
+
+            {error && <div className="auth-error" style={{ marginBottom: 14, textAlign: 'left' }}>{error}</div>}
+
+            <button
+              type="button"
+              onClick={() => handleVerify()}
+              disabled={verifying || code.length !== 6 || expired}
+              className="auth-btn"
+            >
+              {verifying ? <Spinner /> : expired ? 'Code expired' : 'Verify email'}
+            </button>
+
+            <div style={{ marginTop: 18, fontSize: 13, color: 'rgba(160,150,200,0.6)' }}>
+              Didn&apos;t get it?{' '}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending || (resendCooldown > 0 && !expired)}
+                style={{
+                  background: 'none', border: 'none', padding: 0, cursor: resendCooldown > 0 && !expired ? 'not-allowed' : 'pointer',
+                  color: resendCooldown > 0 && !expired ? 'rgba(160,150,200,0.4)' : '#c4a7ff',
+                  fontWeight: 500, fontSize: 13,
+                  textDecoration: resendCooldown > 0 && !expired ? 'none' : 'underline',
+                  textUnderlineOffset: 3,
+                }}
+              >
+                {resending
+                  ? 'Sending…'
+                  : resendCooldown > 0 && !expired
+                    ? `Resend in ${resendCooldown}s`
+                    : 'Resend code'}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setStage('form')
+                setCode('')
+                setError('')
+              }}
               style={{
-                display: 'inline-flex',
-                padding: '14px 28px',
-                borderRadius: 14,
-                background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-                border: 'none',
-                color: '#fff',
-                textDecoration: 'none',
-                fontSize: 14,
-                fontWeight: 600,
-                boxShadow: '0 4px 20px rgba(109,40,217,0.35)',
+                marginTop: 14,
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'rgba(160,150,200,0.55)', fontSize: 12.5,
               }}
             >
-              Back to Sign In
-            </Link>
+              ← Use a different email
+            </button>
           </motion.div>
         ) : (
-          <motion.div key="form">
+          <motion.div
+            key="form"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.3 }}
+          >
             <button
               onClick={handleGoogle}
               disabled={googleLoading}
