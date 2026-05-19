@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { AuthPage, Spinner, GoogleIcon, EmailIcon, LockIcon, Divider, InputField, AuthLink } from '@/components/AuthLayout'
+import GoogleOneTap from '@/components/GoogleOneTap'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -31,11 +32,19 @@ export default function LoginPage() {
 
   const handleGoogle = async () => {
     setGoogleLoading(true)
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/home` } })
+    const { error: err } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=/home` },
+    })
+    if (err) {
+      setError(err.message)
+      setGoogleLoading(false)
+    }
   }
 
   return (
     <AuthPage title="Welcome Back" subtitle="Sign in to continue to your music">
+      <GoogleOneTap context="signin" />
       <button
         onClick={handleGoogle}
         disabled={googleLoading}

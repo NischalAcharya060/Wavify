@@ -6,6 +6,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/robots.txt') ||
     request.nextUrl.pathname.startsWith('/manifest.json') ||
     request.nextUrl.pathname.startsWith('/api/') ||
+    request.nextUrl.pathname.startsWith('/auth/') ||
     request.nextUrl.pathname.startsWith('/_next/') ||
     request.nextUrl.pathname.startsWith('/icons/') ||
     request.nextUrl.pathname.startsWith('/favicon.ico')

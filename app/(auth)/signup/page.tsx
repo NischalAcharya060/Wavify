@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { AuthPage, Spinner, GoogleIcon, EmailIcon, LockIcon, Divider, InputField, AuthLink } from '@/components/AuthLayout'
+import GoogleOneTap from '@/components/GoogleOneTap'
 
 function CheckBadge() {
   return (
@@ -48,11 +49,19 @@ export default function SignupPage() {
 
   const handleGoogle = async () => {
     setGoogleLoading(true)
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/home` } })
+    const { error: err } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=/home` },
+    })
+    if (err) {
+      setError(err.message)
+      setGoogleLoading(false)
+    }
   }
 
   return (
     <AuthPage title="Join Wavify" subtitle="Start your musical journey today">
+      {!done && <GoogleOneTap context="signup" />}
       <AnimatePresence mode="wait">
         {done ? (
           <motion.div
