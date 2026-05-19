@@ -6,6 +6,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/robots.txt') ||
     request.nextUrl.pathname.startsWith('/manifest.json') ||
     request.nextUrl.pathname.startsWith('/api/') ||
+    request.nextUrl.pathname.startsWith('/auth/') ||
     request.nextUrl.pathname.startsWith('/_next/') ||
     request.nextUrl.pathname.startsWith('/icons/') ||
     request.nextUrl.pathname.startsWith('/favicon.ico')
@@ -39,18 +40,28 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/signup') ||
-    request.nextUrl.pathname.startsWith('/reset-password')
+  const pathname = request.nextUrl.pathname
+  const isLandingRoute = pathname === '/'
+  const isAuthRoute = pathname.startsWith('/login') ||
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/reset-password')
 
-  // Redirect unauthenticated users to login (except auth routes)
-  if (!user && !isAuthRoute) {
+  // Logged-in users skip the landing page and go straight to /home.
+  if (user && isLandingRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/home'
+    return NextResponse.redirect(url)
+  }
+
+  // Logged-out users can see the landing page and the auth pages; everything
+  // else (e.g. /home, /library) sends them to /login.
+  if (!user && !isLandingRoute && !isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth pages
+  // Logged-in users don't need to see auth pages.
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/home'
